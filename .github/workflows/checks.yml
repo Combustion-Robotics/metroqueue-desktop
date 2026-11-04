@@ -104,8 +104,14 @@ jobs:
     # Pinned rather than ubuntu-latest, matching linux-release.yml, so a runner image bump cannot
     # change the system libraries under this gate without a visible diff.
     runs-on: ubuntu-24.04
+    env:
+      CARGO_INCREMENTAL: "0"
     steps:
       - uses: actions/checkout@v4
+
+      # The workspace's debug build plus test binaries outgrow the runner's free disk.
+      - name: Free disk space
+        run: sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
 
       # dtolnay installs the minimal profile, which has no clippy. Ask for it explicitly.
       - uses: dtolnay/rust-toolchain@stable
