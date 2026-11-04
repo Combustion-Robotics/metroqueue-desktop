@@ -4727,7 +4727,7 @@ fn row_secs(item: &SongItem) -> f64 {
     parse_duration_ms(item.duration.as_deref()) as f64 / 1000.0
 }
 
-fn format_duration(ms: i64) -> String {
+pub(crate) fn format_duration(ms: i64) -> String {
     let total = ms / 1000;
     match total / 3600 {
         0 => format!("{}:{:02}", total / 60, total % 60),

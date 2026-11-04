@@ -438,6 +438,7 @@ pub async fn set_setting(
         res.map_err(|e| format!("autostart: {e}"))?;
     }
     state.db.set_setting(&key, &value);
+    crate::mqsync::shared_setting_changed(&app, &key);
     // A music video track already playing gets its picture now rather than from the next track.
     if key == "music_videos" && value == "true" {
         state.inner().attach_current_video().await;

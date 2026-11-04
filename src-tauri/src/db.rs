@@ -297,6 +297,9 @@ impl Db {
         if conn.execute("ALTER TABLE stream_url_cache ADD COLUMN client TEXT", []).is_ok() {
             let _ = conn.execute("DELETE FROM stream_url_cache", []);
         }
+        // MetroQueue sync (mqsync.rs): a phone's play to the millisecond, so the same play sent back
+        // later matches it. NULL on the desktop's own plays, which are `played_at` seconds.
+        let _ = conn.execute("ALTER TABLE listens ADD COLUMN played_ms INTEGER", []);
         // Podcast episode (#500). No wipe: a NULL defers to the queue row, which episode pages flag.
         let _ = conn.execute("ALTER TABLE stream_url_cache ADD COLUMN is_episode INTEGER", []);
         // Sweep dead stream URLs here as well as on write. `put_stream` only runs on a cache miss,
@@ -870,6 +873,54 @@ impl Db {
     pub fn clear_listens(&self) {
         let conn = self.0.lock().unwrap();
         let _ = conn.execute_batch("DELETE FROM listens; DELETE FROM listen_songs;");
+    }
+
+    /// MetroQueue sync: plays from `since_ms` on, newest first, as `(video_id, played ms, secs,
+    /// song_json)`. Local files stay out, a phone can't play them.
+    pub fn synced_plays(&self, since_ms: i64, limit: usize) -> Vec<(String, i64, i64, String)> {
+        all(
+            &self.0.lock().unwrap(),
+            "SELECT l.video_id, COALESCE(l.played_ms, l.played_at * 1000) AS ms, l.secs, s.song_json
+             FROM listens l JOIN listen_songs s ON s.video_id = l.video_id
+             WHERE l.played_at >= ?1 / 1000 AND ms >= ?1 AND l.video_id NOT LIKE 'LOCAL:%'
+             ORDER BY l.played_at DESC, ms DESC LIMIT ?2",
+            rusqlite::params![since_ms, limit as i64],
+            |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?)),
+        )
+    }
+
+    /// Every play from `since_ms` on, as `(video_id, played ms)`: what a synced play is matched by.
+    pub fn play_keys(&self, since_ms: i64) -> std::collections::HashSet<(String, i64)> {
+        all(
+            &self.0.lock().unwrap(),
+            "SELECT video_id, COALESCE(played_ms, played_at * 1000) FROM listens
+             WHERE played_at >= ?1 / 1000",
+            [since_ms],
+            |r| Ok((r.get(0)?, r.get(1)?)),
+        )
+        .into_iter()
+        .collect()
+    }
+
+    /// Plays from a synced device, as `(video_id, played ms, secs, song_json)`. A song already
+    /// known keeps the metadata this machine last played it with.
+    pub fn insert_synced_plays(
+        &self,
+        plays: &[(String, i64, i64, String)],
+    ) -> rusqlite::Result<()> {
+        let mut conn = self.0.lock().unwrap();
+        let tx = conn.transaction()?;
+        for (video_id, ms, secs, song_json) in plays {
+            tx.execute(
+                "INSERT OR IGNORE INTO listen_songs(video_id, song_json) VALUES(?1, ?2)",
+                [video_id, song_json],
+            )?;
+            tx.execute(
+                "INSERT INTO listens(video_id, played_at, secs, played_ms) VALUES(?1, ?2, ?3, ?4)",
+                rusqlite::params![video_id, ms.div_euclid(1000), secs, ms],
+            )?;
+        }
+        tx.commit()
     }
 
     /// The most-played songs since `since`, as `(song_json, play_count)` ranked by plays and then

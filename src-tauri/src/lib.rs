@@ -21,6 +21,7 @@ mod lyrics;
 mod matugen;
 mod media;
 mod mini;
+mod mqsync;
 #[cfg(target_os = "linux")]
 mod nativevideo;
 #[cfg(windows)]
