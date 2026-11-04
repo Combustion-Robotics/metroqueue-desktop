@@ -464,7 +464,8 @@
 			"discord_links": "Clickable",
 			"discord_buttons": "Buttons",
 			"colors": "Colors",
-			"interface": "Interface"
+			"interface": "Interface",
+			"metroqueue": "MetroQueue phones"
 		},
 		"general": {
 			"language": "Interface language",
@@ -842,6 +843,17 @@
 			"lb_problem_email": "Verify your MetaBrainz email so ListenBrainz accepts your listens.",
 			"lb_problem_rejected": "ListenBrainz no longer accepts this token. Connect again with a new one.",
 			"lb_verify_email": "Verify email"
+		},
+		"metroqueue": {
+			"allow": "Allow MetroQueue phones to connect",
+			"allow_hint": "Open MetroQueue on your phone → Now Playing → device button → choose this computer.",
+			"paired": "Paired phones",
+			"empty": "No phones paired yet.",
+			"paired_at": "Paired {date}",
+			"forget": "Forget {name}",
+			"forget_title": "Forget {name}?",
+			"forget_desc": "It will need a new pairing code to connect to this computer again.",
+			"forget_confirm": "Forget"
 		}
 	},
 	"dialogs": {
@@ -1027,6 +1039,11 @@
 			"device_desc": "No account needed, it stays on this computer",
 			"device_only": "It stays on this computer, no account needed. Sign in to make playlists on YouTube Music instead.",
 			"local_files": "Songs from your computer can only go in a playlist on this device."
+		},
+		"pairing": {
+			"title": "Pair {name}",
+			"desc": "Enter this code in MetroQueue on your phone.",
+			"expires": "Expires in {time}"
 		}
 	},
 	"integrations": {
@@ -1293,7 +1310,9 @@
 		"subscribed": "Subscribed to {name}",
 		"unsubscribed": "Unsubscribed",
 		"signed_in_as": "Signed in as {name}",
-		"switched_to": "Switched to {name}"
+		"switched_to": "Switched to {name}",
+		"mq_paired": "Paired with {name}",
+		"mq_pairing_failed": "Pairing with {name} failed"
 	},
 	"import": {
 		"button": "Import",

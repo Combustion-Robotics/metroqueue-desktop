@@ -49,6 +49,7 @@
 	import LyricsSourcesSettings from '$lib/components/LyricsSourcesSettings.svelte';
 	import EnhancedLyricsSettings from '$lib/components/EnhancedLyricsSettings.svelte';
 	import LanguagePicker from '$lib/components/LanguagePicker.svelte';
+	import PhonesSettings from '$lib/components/metroqueue/PhonesSettings.svelte';
 
 	type TabId =
 		| 'general'
@@ -623,6 +624,7 @@
 								{/if}
 							</div>
 						</section>
+						<PhonesSettings />
 					{:else if tab === 'playback'}
 						<section class={GROUP}>
 							<h3 class={LABEL}>{t('settings.sections.audio')}</h3>
