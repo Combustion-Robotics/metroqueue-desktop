@@ -82,8 +82,10 @@ export function t(key: TranslationKey, params?: Record<string, string | number>)
 	// catalog must render English, not a blank label.
 	if (typeof str !== 'string' || str === '') str = getNestedValue(translations.en, key);
 	if (typeof str !== 'string') return key;
-	if (!params) return str;
-	return str.replace(/\{(\w+)\}/g, (_, k) => (params[k] !== undefined ? String(params[k]) : `{${k}}`));
+	// Rebrand at runtime so the upstream catalogs (and their Weblate merges) stay untouched.
+	const text = str.replaceAll('Limusic', 'MetroQueue Desktop');
+	if (!params) return text;
+	return text.replace(/\{(\w+)\}/g, (_, k) => (params[k] !== undefined ? String(params[k]) : `{${k}}`));
 }
 
 /**

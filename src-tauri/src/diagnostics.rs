@@ -57,7 +57,7 @@ const SECRET_ENV_KEYS: &[&str] =
 pub fn report(app: &AppHandle, db: &Db) -> String {
     let mut out = String::new();
     out.push_str(
-        "# Limusic diagnostics. Paste this into your bug report.\n\
+        "# MetroQueue Desktop diagnostics. Paste this into your bug report.\n\
          # Cookies, tokens, signed URLs, file paths and IP addresses have been removed.\n\n",
     );
     out.push_str(&redact(&header(app, db)));
@@ -89,7 +89,7 @@ fn header(app: &AppHandle, db: &Db) -> String {
     let mut out = String::new();
     let _ = writeln!(
         out,
-        "Limusic {} ({} {}, {})",
+        "MetroQueue Desktop {} ({} {}, {})",
         env!("CARGO_PKG_VERSION"),
         std::env::consts::OS,
         std::env::consts::ARCH,

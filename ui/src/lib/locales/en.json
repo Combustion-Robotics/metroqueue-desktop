@@ -679,6 +679,7 @@
 		},
 		"about": {
 			"description": "A beautiful, fast, and lightweight desktop music player powered by Tauri and Svelte.",
+			"credits": "Based on {upstream} by SimoHypers and Metrolist.",
 			"version": "Version {version}",
 			"check_updates": "Check for updates",
 			"checking_updates": "Checking for updates...",
