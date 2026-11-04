@@ -18,7 +18,8 @@
 		SquareArrowLeft01Icon,
 		SquareArrowRight01Icon,
 		SpotifyIcon,
-		Chart02Icon
+		Chart02Icon,
+		MountainIcon
 	} from '@hugeicons/core-free-icons';
 	import { toggleMode } from 'mode-watcher';
 	import { Button } from '$lib/components/ui/button';
@@ -34,7 +35,8 @@
 		{ href: '/', label: t('nav.home'), icon: Home01Icon },
 		{ href: '/search', label: t('nav.search'), icon: Search01Icon },
 		{ href: '/library', label: t('nav.library'), icon: LibraryIcon },
-		{ href: '/stats', label: t('nav.stats'), icon: Chart02Icon }
+		{ href: '/stats', label: t('nav.stats'), icon: Chart02Icon },
+		{ href: '/vibes', label: t('nav.vibes'), icon: MountainIcon }
 	]);
 	const isActive = (href: string) =>
 		href === '/' ? page.url.pathname === '/' : page.url.pathname.startsWith(href);

@@ -5,7 +5,7 @@
 //!
 //! Plays live in `listens` (the stats page and On Repeat read them too). Transitions, vibes, the
 //! settings' change times and the tombstones are JSON rows in `settings`, kept for the Mix and
-//! Vibe phases: [`transitions`] and [`vibes`] read them.
+//! Vibe phases: [`transitions`] and [`mq_vibes`] read them.
 
 use std::collections::{BTreeMap, HashSet};
 use std::sync::{Arc, Mutex};
@@ -167,9 +167,48 @@ pub fn transitions(app: &AppHandle) -> Vec<Transition> {
 }
 
 /// The custom vibes, as MetroQueue stores them (`Vibe` JSON).
-#[allow(dead_code)] // the Vibe phase's
-pub fn vibes(app: &AppHandle) -> Vec<Value> {
-    load(&db(app), VIBES_KEY)
+#[tauri::command]
+pub fn mq_vibes(app: AppHandle) -> Vec<Value> {
+    load(&db(&app), VIBES_KEY)
+}
+
+/// Saves a custom vibe made or edited here, stamped now so the phone takes it on the next sync.
+#[tauri::command]
+pub fn mq_save_vibe(app: AppHandle, vibe: Value) -> Result<(), String> {
+    save_vibe(&db(&app), vibe, now_ms()).map_err(|e| e.to_string())
+}
+
+/// Deletes a custom vibe, leaving a tombstone so the phone deletes its copy too.
+#[tauri::command]
+pub fn mq_delete_vibe(app: AppHandle, id: String) {
+    delete_vibe(&db(&app), &id, now_ms());
+}
+
+fn save_vibe(db: &Db, mut vibe: Value, now: i64) -> anyhow::Result<()> {
+    let id = match vibe.get("id").and_then(Value::as_str) {
+        Some(id) if id.starts_with("custom_") => id.to_owned(),
+        _ => anyhow::bail!("not a custom vibe"),
+    };
+    vibe["updatedAt"] = json!(now);
+    let _guard = LOCK.lock().unwrap();
+    let mut vibes: Vec<Value> = load(db, VIBES_KEY);
+    match vibes.iter_mut().find(|v| v.get("id").and_then(Value::as_str) == Some(id.as_str())) {
+        Some(v) => *v = vibe,
+        None => vibes.push(vibe),
+    }
+    save(db, VIBES_KEY, &vibes);
+    Ok(())
+}
+
+fn delete_vibe(db: &Db, id: &str, now: i64) {
+    let _guard = LOCK.lock().unwrap();
+    let mut vibes: Vec<Value> = load(db, VIBES_KEY);
+    vibes.retain(|v| v.get("id").and_then(Value::as_str) != Some(id));
+    save(db, VIBES_KEY, &vibes);
+    let mut tombstones: Tombstones = load(db, DELETED_KEY);
+    tombstones.vibes.insert(id.to_owned(), now);
+    tombstones.vibes = cap(tombstones.vibes);
+    save(db, DELETED_KEY, &tombstones);
 }
 
 fn db(app: &AppHandle) -> Arc<Db> {
@@ -761,6 +800,24 @@ mod tests {
             ]
         );
         assert_eq!(out.deleted.vibes, times(&[("custom_1", 5), ("custom_gone", 4)]));
+    }
+
+    #[test]
+    fn vibes_saved_and_deleted_here_sync_back() {
+        let d = db();
+        let vibe =
+            json!({"id": "custom_1", "name": "Mine", "scene": {"future": 1}, "updatedAt": 2});
+        save_vibe(&d, vibe, 10).unwrap();
+        save_vibe(&d, json!({"id": "custom_1", "name": "Renamed"}), 20).unwrap();
+        assert!(save_vibe(&d, json!({"id": "winter_dusk"}), 30).is_err());
+        assert_eq!(
+            export_db(&d, 0, 40).vibes,
+            [json!({"id": "custom_1", "name": "Renamed", "updatedAt": 20})]
+        );
+        delete_vibe(&d, "custom_1", 50);
+        let out = export_db(&d, 0, 60);
+        assert!(out.vibes.is_empty());
+        assert_eq!(out.deleted.vibes, times(&[("custom_1", 50)]));
     }
 
     #[test]

@@ -49,6 +49,8 @@
 	import MiniPlayer from '$lib/components/MiniPlayer.svelte';
 	import NowPlaying from '$lib/components/NowPlaying.svelte';
 	import TheaterMode from '$lib/components/TheaterMode.svelte';
+	import VibePlayer from '$lib/components/VibePlayer.svelte';
+	import { vibes } from '$lib/vibes.svelte';
 	import VideoSurface from '$lib/components/VideoSurface.svelte';
 	import CommandPalette from '$lib/components/CommandPalette.svelte';
 	import KeyboardShortcuts from '$lib/components/KeyboardShortcuts.svelte';
@@ -308,6 +310,7 @@
 	     long as it is mounted. Nothing playing means nothing to show, and that guard is also what
 	     closes it (and leaves fullscreen) when the queue runs out. -->
 	{#if ui.theaterOpen && playback.now}<TheaterMode />{/if}
+	{#if vibes.playing}<VibePlayer vibe={vibes.playing} />{/if}
 
 	<CommandPalette />
 	<KeyboardShortcuts />
