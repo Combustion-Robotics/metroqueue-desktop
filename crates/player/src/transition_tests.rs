@@ -360,3 +360,173 @@ fn automatic_crossfade_runs_both_effected_decks_in_real_time() {
         p.stop().unwrap();
     }
 }
+
+#[test]
+fn analysis_decode_is_mono_resampled_and_faster_than_real_time() {
+    let dir = tempfile::tempdir().unwrap();
+    let track = dir.path().join("track.wav");
+    wav(&track, 20.0, |t| tone(440.0, t));
+    let p = Player::new(dir.path().to_str().unwrap()).unwrap();
+    let url = track.to_str().unwrap();
+    let started = Instant::now();
+    let tail = p.decode(url, true, 6.0, 11_025).unwrap();
+    let head = p.decode(url, false, 4.0, 11_025).unwrap();
+    let elapsed = started.elapsed().as_secs_f64();
+    eprintln!("decoded 10 s in {elapsed:.3} s");
+    assert!(elapsed < 5.0, "decoding ran in real time: {elapsed}");
+    assert_eq!(tail.rate, 11_025);
+    assert!((tail.duration - 20.0).abs() < 0.05, "duration {}", tail.duration);
+    let secs = |pcm: &Pcm| pcm.samples.len() as f64 / pcm.rate as f64;
+    assert!((secs(&tail) - 6.0).abs() < 0.1, "tail {}", secs(&tail));
+    assert!((tail.start - 14.0).abs() < 0.1, "tail start {}", tail.start);
+    assert!((secs(&head) - 4.0).abs() < 0.1, "head {}", secs(&head));
+    assert_eq!(head.start, 0.0);
+    // 8000/32768 peak per channel; the downmix weighs each of the two by 1/√2.
+    let peak = head.samples.iter().fold(0f32, |m, s| m.max(s.abs()));
+    assert!((peak - 0.345).abs() < 0.02, "peak {peak}");
+    assert!(p
+        .decode(&dir.path().join("missing.wav").to_string_lossy(), false, 4.0, 11_025)
+        .is_err());
+    assert!(std::fs::read_dir(dir.path())
+        .unwrap()
+        .all(|e| { !e.unwrap().file_name().to_string_lossy().starts_with("mix-") }));
+}
+
+#[test]
+fn transition_effects_are_accepted_and_retuned_by_mpv() {
+    let dir = tempfile::tempdir().unwrap();
+    let p = Player::new(dir.path().to_str().unwrap()).unwrap();
+    p.mpv().set_property("ao", "null").unwrap();
+    p.set_gain(Some(-3.0)).unwrap();
+    p.load("av://lavfi:sine=f=440:d=30", &HashMap::new(), Some(-3.0), None).unwrap();
+    p.play().unwrap();
+    wait_for("playback", 5.0, || p.mpv().get_property::<MpvNode>("audio-out-params").is_ok());
+    for style in [Style::Filter, Style::Echo, Style::Rise] {
+        for outgoing in [true, false] {
+            let fx = Fx { style, outgoing, echo_ms: 375 };
+            if fx_graph(fx).is_none() {
+                assert!(fx_commands(style, outgoing, 0.5).is_empty());
+                continue;
+            }
+            set_fx(&p.decks, 0, Some(fx));
+            let chain = p.mpv().get_property::<String>("af").unwrap();
+            assert!(chain.contains("mixfx") && chain.contains("volume=-3dB"), "{chain}");
+            // The graph is built on the next audio frame; commands only reach it from then on.
+            let (target, cmd, value) = fx_commands(style, outgoing, 0.0)[0];
+            wait_for("graph built", 2.0, || {
+                p.mpv().command("af-command", &[FX_LABEL, cmd, &value.to_string(), target]).is_ok()
+            });
+            for progress in [0.0, 0.5, 1.0] {
+                for (target, cmd, value) in fx_commands(style, outgoing, progress) {
+                    p.mpv()
+                        .command("af-command", &[FX_LABEL, cmd, &value.to_string(), target])
+                        .unwrap_or_else(|e| panic!("{style:?} {cmd}={value}: {e}"));
+                }
+            }
+            set_fx(&p.decks, 0, None);
+            let chain = p.mpv().get_property::<String>("af").unwrap();
+            assert!(!chain.contains("mixfx") && chain.contains("volume=-3dB"), "{chain}");
+        }
+    }
+    p.stop().unwrap();
+}
+
+#[test]
+fn effect_envelopes_end_where_they_hand_back() {
+    let f = |style, outgoing, progress| fx_commands(style, outgoing, progress)[0].2;
+    // Outgoing filters close in, incoming ones open up to (nearly) nothing.
+    assert!(f(Style::Filter, true, 0.0) < f(Style::Filter, true, 1.0));
+    assert!((f(Style::Filter, false, 0.9) - 20_000.0).abs() < 1.0);
+    assert!((f(Style::Rise, false, 0.5) - 250.0).abs() < 1e-9, "bass held back until the drop");
+    assert!((f(Style::Rise, false, 0.85) - 20.0).abs() < 1e-9);
+    assert!((fx_commands(Style::Rise, true, 1.0)[1].2 - 1.2589).abs() < 1e-9);
+    // The echo's dry signal is untouched at first and gone by 60%.
+    assert_eq!(f(Style::Echo, true, 0.2), 1.0);
+    assert_eq!(f(Style::Echo, true, 0.6), 0.0);
+    assert!(fx_commands(Style::Fade, true, 0.5).is_empty());
+}
+
+#[test]
+fn planned_transition_starts_at_its_point_and_enters_the_next_track_where_asked() {
+    let dir = tempfile::tempdir().unwrap();
+    let first = dir.path().join("outgoing.wav");
+    let second = dir.path().join("incoming.wav");
+    wav(&first, 6.0, |t| tone(440.0, t));
+    wav(&second, 6.0, |t| tone(880.0, t));
+    let mut p = Player::new(dir.path().to_str().unwrap()).unwrap();
+    let mut events = p.take_events().unwrap();
+    let incoming = p.idle_mpv().unwrap();
+    for m in [p.mpv(), incoming.as_ref()] {
+        m.set_property("ao", "null").unwrap();
+        m.set_property("ao-null-untimed", false).unwrap();
+    }
+    p.set_crossfade(Some(5.0));
+    p.load(first.to_str().unwrap(), &HashMap::new(), None, None).unwrap();
+    p.enqueue(second.to_str().unwrap()).unwrap();
+    p.set_transition(Some(Transition {
+        start: Some(2.0),
+        fade: 1.0,
+        incoming_start: 1.5,
+        style: Style::Filter,
+        incoming_speed: 1.03,
+        ..Transition::default()
+    }));
+    wait_for("incoming preload", 5.0, || p.decks.preloaded.load(Ordering::Acquire));
+    p.play().unwrap();
+    wait_for("planned start", 5.0, || p.decks.fading.load(Ordering::Acquire));
+    let out = p.decks.mpv(0).unwrap();
+    let at = out.get_property::<f64>("time-pos").unwrap();
+    assert!((2.0..2.4).contains(&at), "started at {at}");
+    wait_for("effects on", 1.0, || {
+        incoming.get_property::<String>("af").unwrap().contains("mixfx")
+    });
+    assert!(out.get_property::<String>("af").unwrap().contains("highpass"));
+    let entered = incoming.get_property::<f64>("time-pos").unwrap();
+    assert!((1.5..2.0).contains(&entered), "incoming at {entered}");
+    assert_eq!(incoming.get_property::<f64>("speed").unwrap(), 1.03);
+    wait_for("fade end", 3.0, || !p.decks.fading.load(Ordering::Acquire));
+    assert!(!incoming.get_property::<String>("af").unwrap().contains("mixfx"));
+    assert_eq!(incoming.get_property::<f64>("speed").unwrap(), 1.03, "eased back at once");
+    let ended = std::iter::from_fn(|| events.try_recv().ok())
+        .filter(|e| matches!(e, PlayerEvent::TrackEnded))
+        .count();
+    assert_eq!(ended, 1);
+    // A skip back to a track the user picked plays at the session tempo.
+    p.load(first.to_str().unwrap(), &HashMap::new(), None, None).unwrap();
+    assert_eq!(p.mpv().get_property::<f64>("speed").unwrap(), 1.0);
+    p.stop().unwrap();
+}
+
+#[test]
+fn manual_skip_blends_only_into_a_ready_preload() {
+    let dir = tempfile::tempdir().unwrap();
+    let first = dir.path().join("a.wav");
+    let second = dir.path().join("b.wav");
+    wav(&first, 10.0, |t| tone(440.0, t));
+    wav(&second, 10.0, |t| tone(880.0, t));
+    let mut p = Player::new(dir.path().to_str().unwrap()).unwrap();
+    let mut events = p.take_events().unwrap();
+    let incoming = p.idle_mpv().unwrap();
+    for m in [p.mpv(), incoming.as_ref()] {
+        m.set_property("ao", "null").unwrap();
+        m.set_property("ao-null-untimed", false).unwrap();
+    }
+    p.set_crossfade(Some(5.0));
+    p.load(first.to_str().unwrap(), &HashMap::new(), None, None).unwrap();
+    assert!(!p.skip_crossfade(0.5), "nothing preloaded");
+    p.enqueue(second.to_str().unwrap()).unwrap();
+    wait_for("incoming preload", 5.0, || p.decks.preloaded.load(Ordering::Acquire));
+    p.pause().unwrap();
+    assert!(!p.skip_crossfade(0.5), "paused");
+    p.play().unwrap();
+    wait_for("playing", 2.0, || p.mpv().get_property::<f64>("time-pos").unwrap_or(0.0) > 0.2);
+    assert!(p.skip_crossfade(0.5));
+    assert!(!p.skip_crossfade(0.5), "a fade is running");
+    wait_for("fade end", 2.0, || !p.decks.fading.load(Ordering::Acquire));
+    assert_eq!(p.decks.active.load(Ordering::SeqCst), 1);
+    let ended = std::iter::from_fn(|| events.try_recv().ok())
+        .filter(|e| matches!(e, PlayerEvent::TrackEnded))
+        .count();
+    assert_eq!(ended, 1);
+    p.stop().unwrap();
+}

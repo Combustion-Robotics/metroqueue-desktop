@@ -124,6 +124,73 @@ struct AudioFilters {
     speed: f64,
     semitones: i32,
     reverb: Reverb,
+    /// A transition effect running on that deck (see [`fx_graph`]).
+    fx: [Option<Fx>; 2],
+    /// A tempo match on that deck, as a factor on `speed` (1 for none).
+    nudge: [f64; 2],
+}
+
+/// How a transition blends the two tracks. Every style but `Cut` keeps the equal-power fade.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum Style {
+    #[default]
+    Fade,
+    /// Outgoing high-pass sweep, incoming low-pass opening up.
+    Filter,
+    /// Outgoing echo tail while its dry signal fades.
+    Echo,
+    /// Outgoing high-pass sweep with a slight lift, incoming bass held back until the drop.
+    Rise,
+    /// No overlap: the incoming track starts at full volume.
+    Cut,
+}
+
+/// The transition out of the playing track into the preloaded one ([`Player::set_transition`]).
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Transition {
+    /// Outgoing position, media seconds, to start at. `None`: `fade` before the end, clamped like
+    /// the plain crossfade.
+    pub start: Option<f64>,
+    /// Overlap in media seconds of the outgoing track; 0 cuts.
+    pub fade: f64,
+    /// Where the incoming track starts, seconds.
+    pub incoming_start: f64,
+    pub style: Style,
+    /// Echo repeat interval, seconds.
+    pub echo_delay: f64,
+    /// Incoming speed during the overlap (tempo match), eased back to normal afterwards. Only
+    /// applied while the session tempo is 1.
+    pub incoming_speed: f64,
+}
+
+impl Default for Transition {
+    fn default() -> Self {
+        Self {
+            start: None,
+            fade: 0.0,
+            incoming_start: 0.0,
+            style: Style::Fade,
+            echo_delay: 0.375,
+            incoming_speed: 1.0,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+struct Fx {
+    style: Style,
+    outgoing: bool,
+    echo_ms: u32,
+}
+
+/// Mono PCM decoded for analysis ([`Player::decode`]).
+pub struct Pcm {
+    pub samples: Vec<f32>,
+    pub rate: u32,
+    /// Track position of the first sample, seconds.
+    pub start: f64,
+    /// The whole track's length, seconds.
+    pub duration: f64,
 }
 
 /// Session reverb controls. Dry and wet are independent signal levels, not a crossfade.
@@ -227,6 +294,8 @@ struct Decks {
     /// The native window mpv draws the picture into, 0 for none (the render API). See
     /// [`Player::set_video_window`].
     wid: AtomicI64,
+    /// How to move into the preloaded track; `None` is the plain crossfade.
+    plan: Mutex<Option<Transition>>,
 }
 
 impl Decks {
@@ -397,6 +466,8 @@ impl Player {
                 speed: 1.0,
                 semitones: 0,
                 reverb: Reverb::default(),
+                fx: [None; 2],
+                nudge: [1.0; 2],
             }),
             speed_bits: AtomicU64::new(1.0_f64.to_bits()),
             a: a.clone(),
@@ -418,6 +489,7 @@ impl Player {
             video_visible: AtomicBool::new(false),
             on_new_deck: OnceLock::new(),
             wid: AtomicI64::new(0),
+            plan: Mutex::new(None),
         });
         spawn_deck_events(&a, 0, decks.clone())?;
         Ok(Player { decks, events: Some(rx) })
@@ -495,6 +567,8 @@ impl Player {
             }
         }
         self.apply_headers(headers)?;
+        // A track the user picked plays at the session tempo, not a transition's tempo match.
+        self.decks.af.lock().unwrap().nudge = [1.0; 2];
         self.set_gain(gain_db)?;
         let args = loadfile_args(url, start, loadfile_has_index(self.mpv()));
         let refs: Vec<&str> = args.iter().map(String::as_str).collect();
@@ -508,6 +582,8 @@ impl Player {
     /// inherit the currently-set headers. Phase 1 direct-URL clients need no per-track cookies,
     /// so this is fine; per-track header divergence is a Phase 2+ concern (WEB_REMIX `&pot=`).
     pub fn enqueue(&self, url: &str) -> Result<(), Error> {
+        // A plan belongs to the pair it was made for; the caller sets this pair's afterwards.
+        *self.decks.plan.lock().unwrap() = None;
         if self.decks.crossfade_ms.load(Ordering::Relaxed) == 0 {
             self.mpv().command("loadfile", &[&quoted(url), "append"])?;
             return Ok(());
@@ -534,7 +610,7 @@ impl Player {
     pub fn set_crossfade(&self, secs: Option<f64>) {
         let ms = secs
             .filter(|s| s.is_finite() && *s >= 1.0)
-            .map_or(0, |s| (s.min(10.0) * 1000.0) as u64);
+            .map_or(0, |s| (s.min(15.0) * 1000.0) as u64);
         self.decks.crossfade_ms.store(ms, Ordering::Relaxed);
         if ms == 0 {
             // Otherwise a track loaded onto the idle deck stays there for the rest of the
@@ -552,6 +628,7 @@ impl Player {
     /// is hearing is not what changed), on for an explicit load.
     fn drop_preload(&self, cut_fade: bool) {
         *self.decks.pending.lock().unwrap() = None;
+        *self.decks.plan.lock().unwrap() = None;
         // Before anything else: a `loadfile` still in flight must not publish itself after this.
         self.decks.preload_gen.fetch_add(1, Ordering::SeqCst);
         if cut_fade {
@@ -578,6 +655,71 @@ impl Player {
         if let Some(m) = self.decks.mpv(self.decks.idle_deck()) {
             let _ = m.set_property("pause", true);
         }
+        // So a load right after this doesn't start the new track through the effect; the ramp
+        // thread puts the chain back.
+        self.decks.af.lock().unwrap().fx = [None; 2];
+    }
+
+    /// Whether the next track goes onto the second deck (crossfading is on).
+    pub fn crossfades(&self) -> bool {
+        self.decks.crossfade_ms.load(Ordering::Relaxed) > 0
+    }
+
+    /// How to move into the track the last [`Self::enqueue`] preloaded. `None` (and every new
+    /// enqueue, until this is called again) is the plain crossfade of [`Self::set_crossfade`].
+    pub fn set_transition(&self, plan: Option<Transition>) {
+        *self.decks.plan.lock().unwrap() = plan;
+    }
+
+    /// [`Self::enqueue`] into mpv's own playlist even while crossfading: a gapless album.
+    pub fn enqueue_gapless(&self, url: &str) -> Result<(), Error> {
+        self.drop_preload(false);
+        self.mpv().command("loadfile", &[&quoted(url), "append"])?;
+        Ok(())
+    }
+
+    /// Blend into the preloaded track now, over `fade` seconds (a manual skip), sending the
+    /// `TrackEnded` an automatic crossfade sends. False, and nothing changes, when no track is
+    /// preloaded, a fade is running, or nothing is playing: skip normally then.
+    pub fn skip_crossfade(&self, fade: f64) -> bool {
+        let d = &self.decks;
+        if d.fading.load(Ordering::Acquire) || !d.preloaded.load(Ordering::Acquire) {
+            return false;
+        }
+        let m = self.mpv();
+        if m.get_property::<bool>("pause").unwrap_or(true)
+            || m.get_property::<bool>("idle-active").unwrap_or(true)
+        {
+            return false;
+        }
+        // The planned entry point skips a silent intro; one deep into the song (a custom
+        // transition's) is not where a skip should land.
+        let at = d.plan.lock().unwrap().map_or(0.0, |p| p.incoming_start);
+        let plan = Transition {
+            fade,
+            incoming_start: if at <= 10.0 { at } else { 0.0 },
+            ..Default::default()
+        };
+        start_crossfade(d, d.active.load(Ordering::SeqCst), fade, plan)
+    }
+
+    /// Whether a crossfade is running.
+    pub fn is_fading(&self) -> bool {
+        self.decks.fading.load(Ordering::Acquire)
+    }
+
+    /// Decode up to `secs` of `url` from its start, or up to its end with `from_end`, as mono f32
+    /// at `rate` Hz, for analysis. A throwaway mpv writing to a file in the cache directory, never
+    /// an audio device; network settings follow the deck being heard. Blocking, so run it off the
+    /// audio and event threads.
+    pub fn decode(&self, url: &str, from_end: bool, secs: f64, rate: u32) -> Result<Pcm, Error> {
+        static SEQ: AtomicU64 = AtomicU64::new(0);
+        let n = SEQ.fetch_add(1, Ordering::Relaxed);
+        let out = std::path::Path::new(&self.decks.cache_dir)
+            .join(format!("mix-{}-{n}.pcm", std::process::id()));
+        let result = decode_to(self.mpv(), url, from_end, secs, rate, &out);
+        let _ = std::fs::remove_file(&out);
+        result
     }
 
     /// Clear the mpv playlist (e.g. when the user jumps to a new track).
@@ -780,7 +922,8 @@ impl Player {
             ensure_reverb_asset(&self.decks, reverb.preset)?;
         }
         let previous = *af;
-        let wanted = AudioFilters { speed, semitones, reverb, ..previous };
+        // The user's tempo replaces a transition's tempo match.
+        let wanted = AudioFilters { speed, semitones, reverb, nudge: [1.0; 2], ..previous };
         for deck in 0..2 {
             // Audible Reverb embeds a fixed tempo in lavfi; other speed updates retain stretch state.
             let result = if previous.semitones == semitones
@@ -836,6 +979,138 @@ fn ensure_reverb_asset(decks: &Decks, preset: u8) -> Result<std::path::PathBuf, 
     Ok(path)
 }
 
+fn decode_to(
+    src: &Mpv,
+    url: &str,
+    from_end: bool,
+    secs: f64,
+    rate: u32,
+    out: &std::path::Path,
+) -> Result<Pcm, Error> {
+    let mpv = Mpv::new()?;
+    for key in ["user-agent", "http-header-fields", "http-proxy", "stream-lavf-o"] {
+        if let Ok(v) = src.get_property::<String>(key) {
+            let _ = mpv.set_property(key, v.as_str());
+        }
+    }
+    // ao_pcm is untimed: it writes as fast as mpv decodes.
+    for (key, value) in [
+        ("vid", "no"),
+        ("ytdl", "no"),
+        ("demuxer", "lavf"),
+        ("ao", "pcm"),
+        ("ao-pcm-waveheader", "no"),
+        ("audio-format", "float"),
+        ("audio-channels", "mono"),
+        ("gapless-audio", "no"),
+    ] {
+        mpv.set_property(key, value)?;
+    }
+    mpv.set_property("audio-samplerate", rate as i64)?;
+    mpv.set_property("ao-pcm-file", out.to_string_lossy().as_ref())?;
+    if from_end {
+        mpv.set_property("start", format!("-{secs}").as_str())?;
+    } else {
+        mpv.set_property("length", secs.to_string().as_str())?;
+    }
+    let mut ev = EventContext::new(mpv.ctx);
+    ev.disable_deprecated_events().ok();
+    mpv.command("loadfile", &[&quoted(url), "replace"])?;
+    let deadline = std::time::Instant::now() + Duration::from_secs(60);
+    let mut duration = 0.0;
+    loop {
+        if std::time::Instant::now() > deadline {
+            return Err(Error::Mpv(libmpv2::Error::Raw(libmpv2::mpv_error::Generic)));
+        }
+        match ev.wait_event(0.5) {
+            Some(Ok(Event::FileLoaded)) => duration = mpv.get_property("duration").unwrap_or(0.0),
+            Some(Ok(Event::EndFile(_))) => break,
+            Some(Err(e)) => return Err(e.into()),
+            _ => {}
+        }
+    }
+    // Destroying the instance closes the output file, so everything written is on disk.
+    drop(ev);
+    drop(mpv);
+    let bytes = std::fs::read(out).map_err(|_| libmpv2::Error::Raw(libmpv2::mpv_error::Generic))?;
+    let samples: Vec<f32> =
+        bytes.chunks_exact(4).map(|b| f32::from_le_bytes([b[0], b[1], b[2], b[3]])).collect();
+    let length = samples.len() as f64 / rate as f64;
+    let start = if from_end { (duration - length).max(0.0) } else { 0.0 };
+    Ok(Pcm { samples, rate, start, duration })
+}
+
+/// The lavfi graph of a transition effect, labelled for [`fx_commands`]. MetroQueue's
+/// `TransitionFxAudioProcessor` envelopes, as FFmpeg filters retuned with `af-command` on every
+/// ramp step. shortcut: no soft clip on the echo build-up and no tape tone on its repeats.
+fn fx_graph(fx: Fx) -> Option<String> {
+    let graph = match (fx.style, fx.outgoing) {
+        (Style::Filter, true) => "highpass@sweep=f=40:width_type=q:width=0.9".to_owned(),
+        (Style::Filter, false) => "lowpass@sweep=f=400:width_type=q:width=0.7071".to_owned(),
+        (Style::Rise, true) => "highpass@sweep=f=40:width_type=q:width=1,volume@gain=1".to_owned(),
+        (Style::Rise, false) => "highpass@sweep=f=250:width_type=q:width=0.7071".to_owned(),
+        // Feedback 0.5 unrolled into four taps; the dry level before it also feeds the repeats,
+        // so once it has faded only the tail is left.
+        (Style::Echo, true) => {
+            let d = fx.echo_ms.clamp(1, 1000);
+            format!(
+                "volume@gain=1,aecho=1:1:{d}|{}|{}|{}:0.45|0.225|0.1125|0.05625",
+                2 * d,
+                3 * d,
+                4 * d
+            )
+        }
+        _ => return None,
+    };
+    Some(format!("@{FX_LABEL}:lavfi=[{graph}]"))
+}
+
+const FX_LABEL: &str = "mixfx";
+
+/// The effect's state at `progress` (0..1) of the overlap, as `af-command`s (target filter,
+/// command, value) to its graph. Targeted: sending to "all" fails on lavfi's own format filters.
+fn fx_commands(
+    style: Style,
+    outgoing: bool,
+    progress: f64,
+) -> Vec<(&'static str, &'static str, f64)> {
+    let sweep = |from: f64, to: f64, at: f64| from * (to / from).powf(at);
+    let ramp = |from: f64, to: f64| ((progress - from) / (to - from)).clamp(0.0, 1.0);
+    match (style, outgoing) {
+        (Style::Filter, true) => {
+            vec![("highpass@sweep", "f", sweep(40.0, 1_500.0, progress.powf(0.6)))]
+        }
+        (Style::Filter, false) => {
+            vec![(
+                "lowpass@sweep",
+                "f",
+                sweep(400.0, 20_000.0, (progress / 0.9).min(1.0).powf(1.5)),
+            )]
+        }
+        (Style::Rise, true) => vec![
+            ("highpass@sweep", "f", sweep(40.0, 1_000.0, progress)),
+            ("volume@gain", "volume", 1.0 + 0.2589 * ramp(0.0, 0.8)),
+        ],
+        (Style::Rise, false) => vec![("highpass@sweep", "f", sweep(250.0, 20.0, ramp(0.7, 0.85)))],
+        (Style::Echo, true) => {
+            let fade = ramp(0.25, 0.6);
+            vec![("volume@gain", "volume", 1.0 - fade * fade * (3.0 - 2.0 * fade))]
+        }
+        _ => vec![],
+    }
+}
+
+/// Put a transition effect on one deck (or take it off), keeping the rest of its chain.
+fn set_fx(decks: &Decks, deck: usize, fx: Option<Fx>) {
+    let mut af = decks.af.lock().unwrap();
+    af.fx[deck] = fx;
+    if let Err(e) = apply_filters(decks, deck, &af) {
+        tracing::warn!(error = %e, "transition effect refused, fading without it");
+        af.fx[deck] = None;
+        let _ = apply_filters(decks, deck, &af);
+    }
+}
+
 fn apply_filters(decks: &Decks, deck: usize, af: &AudioFilters) -> Result<(), Error> {
     let Some(mpv) = decks.mpv(deck) else { return Ok(()) };
     let mut chain = af_chain(af.gain[deck], 0, 1.0);
@@ -877,11 +1152,14 @@ fn apply_filters(decks: &Decks, deck: usize, af: &AudioFilters) -> Result<(), Er
     } else {
         af_chain(None, af.semitones, af.speed)
     };
-    if !stretch.is_empty() {
-        if !chain.is_empty() {
-            chain.push(',');
+    let fx = af.fx[deck].and_then(fx_graph).unwrap_or_default();
+    for part in [stretch, fx] {
+        if !part.is_empty() {
+            if !chain.is_empty() {
+                chain.push(',');
+            }
+            chain.push_str(&part);
         }
-        chain.push_str(&stretch);
     }
     set_filter_chain(mpv, &chain).map_err(|e| {
         if af.reverb.enabled {
@@ -892,7 +1170,7 @@ fn apply_filters(decks: &Decks, deck: usize, af: &AudioFilters) -> Result<(), Er
             Error::Mpv(e)
         }
     })?;
-    mpv.set_property("speed", af.speed)?;
+    mpv.set_property("speed", af.speed * af.nudge[deck])?;
     Ok(())
 }
 
@@ -1263,8 +1541,9 @@ const FADE_STEP: Duration = Duration::from_millis(50);
 
 /// Properties a fresh deck has to inherit from the one playing. mpv keeps these per instance, so
 /// a preload that skipped them would stream past the user's proxy, without their headers, at 1x,
-/// with no loudness gain and no pitch shift.
-const INHERITED: [&str; 5] = ["user-agent", "http-header-fields", "http-proxy", "speed", "af"];
+/// with no loudness gain and no pitch shift. Speed is the session's, not the playing deck's, which
+/// may still be easing out of a tempo match.
+const INHERITED: [&str; 4] = ["user-agent", "http-header-fields", "http-proxy", "af"];
 
 /// Load `url` on the idle deck, paused and silent, ready for [`start_crossfade`] to bring it up.
 fn preload(decks: &Decks, mpv: &Arc<Mpv>, url: &str) -> Result<(), Error> {
@@ -1276,6 +1555,7 @@ fn preload(decks: &Decks, mpv: &Arc<Mpv>, url: &str) -> Result<(), Error> {
             let _ = mpv.set_property(key, v.as_str());
         }
     }
+    mpv.set_property("speed", decks.speed())?;
     mpv.set_property("pause", true)?;
     mpv.set_property("volume", 0.0)?;
     // Off the audio device until its fade starts (`start_crossfade` puts it back). A paused deck
@@ -1329,11 +1609,38 @@ fn maybe_crossfade(decks: &Arc<Decks>, deck: usize, pos: f64, duration: f64) {
     }
     // mpv positions follow the source clock, whereas the volume worker sleeps in real time.
     let speed = decks.speed();
-    let Some(fade) = fade_due(decks.crossfade_secs(), pos / speed, duration / speed) else {
-        return;
+    let plan = *decks.plan.lock().unwrap();
+    let fade = match plan {
+        Some(Transition { start: Some(start), fade, .. }) => {
+            if !(pos >= start && duration.is_finite() && duration > 1.0) {
+                return;
+            }
+            // A preload that landed late must not keep climbing long after the outgoing end.
+            fade.min((duration - pos).max(0.0) + 0.5) / speed
+        }
+        Some(p) => {
+            // A cut still needs a moment before the end to swap in.
+            let Some(fade) = fade_due(p.fade.max(0.15), pos / speed, duration / speed) else {
+                return;
+            };
+            if p.style == Style::Cut {
+                0.0
+            } else {
+                fade
+            }
+        }
+        None => match fade_due(decks.crossfade_secs(), pos / speed, duration / speed) {
+            Some(fade) => fade,
+            None => return,
+        },
     };
-    start_crossfade(decks, deck, fade);
+    start_crossfade(decks, deck, fade, plan.unwrap_or_default());
 }
+
+/// How often a tempo-matched incoming track steps back to the session speed after its fade, and
+/// in how many steps.
+const NUDGE_STEP: Duration = Duration::from_millis(1_500);
+const NUDGE_STEPS: u32 = 4;
 
 /// Begin the overlap: swap which deck the app hears, unpause the preloaded one, and ramp both
 /// volumes from a worker thread.
@@ -1342,11 +1649,15 @@ fn maybe_crossfade(decks: &Arc<Decks>, deck: usize, pos: f64, duration: f64) {
 /// one being heard: the app advances its queue there, so the UI, the media keys and the scrobbler
 /// change over with the audio rather than seconds late. The outgoing deck's real end-of-file is
 /// dropped by [`event_loop`], which by then is no longer the live deck.
-fn start_crossfade(decks: &Arc<Decks>, from: usize, fade: f64) {
-    let (Some(out), Some(incoming)) = (decks.mpv(from), decks.mpv(1 - from)) else { return };
+fn start_crossfade(decks: &Arc<Decks>, from: usize, fade: f64, plan: Transition) -> bool {
+    let (Some(out), Some(incoming)) = (decks.mpv(from), decks.mpv(1 - from)) else { return false };
     let (out, incoming) = (out.clone(), incoming.clone());
     let speed = decks.speed();
-    decks.preloaded.store(false, Ordering::Release);
+    // Claimed atomically: a manual skip and the position tick can race for the same preload.
+    if !decks.preloaded.swap(false, Ordering::AcqRel) {
+        return false;
+    }
+    decks.plan.lock().unwrap().take();
     // Read before `fading` goes up, which is what lets a cancel bump it: taken afterwards, a
     // cancel landing in between would be captured as the current value and never noticed.
     let gen = decks.fade_gen.load(Ordering::SeqCst);
@@ -1364,7 +1675,15 @@ fn start_crossfade(decks: &Arc<Decks>, from: usize, fade: f64) {
         if let Err(e) = incoming.set_property("ao", ao.as_str()) {
             tracing::warn!(error = %e, "crossfade deck refused its audio device, it will be silent");
         }
-        let _ = incoming.command("seek", &["0", "absolute"]);
+    }
+    let at = Some(plan.incoming_start).filter(|s| s.is_finite() && *s > 0.0).unwrap_or(0.0);
+    if cfg!(target_os = "linux") || at > 0.0 {
+        let _ = incoming.command("seek", &[&at.to_string(), "absolute"]);
+    }
+    let nudge = plan.incoming_speed;
+    let nudged = speed == 1.0 && nudge != 1.0 && (0.9..=1.1).contains(&nudge);
+    if nudged {
+        let _ = incoming.set_property("speed", nudge);
     }
     let _ = incoming.set_property("pause", false);
     let _ = decks.tx.send(PlayerEvent::TrackEnded);
@@ -1383,11 +1702,25 @@ fn start_crossfade(decks: &Arc<Decks>, from: usize, fade: f64) {
             fade = fade.min(secs / speed / 2.0);
         }
     }
-    tracing::info!(from, fade, "crossfading");
+    tracing::info!(from, fade, style = ?plan.style, "crossfading");
     let (ramp, fade_out, fade_in) = (decks.clone(), out.clone(), incoming.clone());
     let spawned = std::thread::Builder::new().name("mpv-crossfade".into()).spawn(move || {
         let (decks, out, incoming) = (ramp, fade_out, fade_in);
-        let steps = ((fade / FADE_STEP.as_secs_f64()).round() as i64).max(1);
+        let steps = (fade / FADE_STEP.as_secs_f64()).round() as i64;
+        let style = plan.style;
+        // Set here, not on the event thread: a chain update waits on the effects lock.
+        let has_fx = steps > 0 && fx_graph(Fx { style, outgoing: true, echo_ms: 1 }).is_some();
+        if nudged {
+            decks.af.lock().unwrap().nudge[1 - from] = nudge;
+            let _ = incoming.set_property("speed", nudge);
+        }
+        if has_fx {
+            let echo_ms = (plan.echo_delay * 1000.0).round() as u32;
+            for (deck, outgoing) in [(from, true), (1 - from, false)] {
+                let fx = Fx { style, outgoing, echo_ms };
+                set_fx(&decks, deck, fx_graph(fx).map(|_| fx));
+            }
+        }
         let mut cancelled = false;
         for step in 1..=steps {
             std::thread::sleep(FADE_STEP);
@@ -1397,14 +1730,29 @@ fn start_crossfade(decks: &Arc<Decks>, from: usize, fade: f64) {
                 cancelled = true;
                 break;
             }
-            let turn = step as f64 / steps as f64 * std::f64::consts::FRAC_PI_2;
+            let progress = step as f64 / steps as f64;
+            let turn = progress * std::f64::consts::FRAC_PI_2;
             let vol = decks.volume.load(Ordering::Relaxed);
             let _ = out.set_property("volume", fade_volume(vol, turn.cos()));
             let _ = incoming.set_property("volume", fade_volume(vol, turn.sin()));
+            if has_fx {
+                for (m, outgoing) in [(&out, true), (&incoming, false)] {
+                    for (target, cmd, value) in fx_commands(style, outgoing, progress) {
+                        let _ =
+                            m.command("af-command", &[FX_LABEL, cmd, &value.to_string(), target]);
+                    }
+                }
+            }
+        }
+        if has_fx {
+            // The incoming envelope ends dry; the outgoing deck is about to stop, and the next
+            // preload replaces its chain.
+            decks.af.lock().unwrap().fx[from] = None;
+            set_fx(&decks, 1 - from, None);
         }
         // A lookahead that arrived mid-fade was held back rather than loaded over the track that
-        // was still fading out. Now there is a free deck for it.
-        if let Some(url) = finish_fade(&decks, &out, &incoming, cancelled) {
+        // was still fading out. Now there is a free deck for it. A cut (no steps) ends at once.
+        if let Some(url) = finish_fade(&decks, &out, &incoming, cancelled || steps == 0) {
             // Unless crossfading was switched off while this ran, in which case the next
             // transition is mpv's own gapless one and a loaded deck would just sit there.
             if decks.crossfade_ms.load(Ordering::Relaxed) > 0 {
@@ -1415,6 +1763,9 @@ fn start_crossfade(decks: &Arc<Decks>, from: usize, fade: f64) {
                 }
             }
         }
+        if nudged {
+            ease_speed(&decks, 1 - from, nudge, cancelled);
+        }
     });
     if let Err(e) = spawned {
         // No thread, no ramp. The decks have already swapped, so tearing down as if the fade had
@@ -1423,6 +1774,34 @@ fn start_crossfade(decks: &Arc<Decks>, from: usize, fade: f64) {
         // preloaded with.
         tracing::warn!(error = %e, "couldn't spawn the crossfade thread");
         finish_fade(decks, &out, &incoming, true);
+        if nudged {
+            let _ = incoming.set_property("speed", speed);
+        }
+    }
+    true
+}
+
+/// Brings a tempo-matched deck back to the session speed in a few steps, or at once when its fade
+/// was cut short. Stops when someone else set a speed meanwhile (a load, or the user's tempo).
+fn ease_speed(decks: &Decks, deck: usize, from: f64, at_once: bool) {
+    let mut current = from;
+    for step in 1..=if at_once { 1 } else { NUDGE_STEPS } {
+        if !at_once {
+            std::thread::sleep(NUDGE_STEP);
+        }
+        let mut af = decks.af.lock().unwrap();
+        if af.nudge[deck] != current {
+            return;
+        }
+        current = if at_once || step == NUDGE_STEPS {
+            1.0
+        } else {
+            from + (1.0 - from) * step as f64 / NUDGE_STEPS as f64
+        };
+        af.nudge[deck] = current;
+        if let Some(m) = decks.mpv(deck) {
+            let _ = m.set_property("speed", af.speed * current);
+        }
     }
 }
 
