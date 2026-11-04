@@ -87,7 +87,7 @@ pub struct AppState {
     /// A one-shot resume position `(videoId, secs)` set by `restore_queue` and consumed by the
     /// next `start_current` — applied only when that track is the one being started, so jumping to
     /// a different track first doesn't inherit the old position (context/11).
-    pending_seek: std::sync::Mutex<Option<(String, f64)>>,
+    pub(crate) pending_seek: std::sync::Mutex<Option<(String, f64)>>,
     /// Whether the watch-history ping has already fired for the current play (latched, so the
     /// frequent position events fire it exactly once; cleared wherever a fresh play starts).
     /// An atomic rather than a `QueueState` field because `on_position` runs on every raw mpv
@@ -2930,6 +2930,16 @@ impl AppState {
         );
     }
 
+    /// The queue read in place, for the MetroQueue receiver: `(items, current, shuffle, repeat,
+    /// source name)`. Its pushes would otherwise serialize every row on each player change.
+    pub(crate) async fn read_queue<T>(
+        &self,
+        f: impl FnOnce(&[SongItem], usize, bool, RepeatMode, Option<&str>) -> T,
+    ) -> T {
+        let q = self.queue.lock().await;
+        f(&q.items, q.current, q.shuffle_orig.is_some(), q.repeat, q.source_name.as_deref())
+    }
+
     pub async fn queue_snapshot(&self) -> serde_json::Value {
         let q = self.queue.lock().await;
         serde_json::json!({
@@ -4230,7 +4240,10 @@ impl AppState {
     }
 
     /// Remove every upcoming track `pick` matches. Guests: add-only, no clearing.
-    async fn drop_upcoming(self: &std::sync::Arc<Self>, pick: impl Fn(&SongItem) -> bool) {
+    pub(crate) async fn drop_upcoming(
+        self: &std::sync::Arc<Self>,
+        pick: impl Fn(&SongItem) -> bool,
+    ) {
         if self.lt.is_guest().await {
             return;
         }

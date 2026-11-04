@@ -78,6 +78,12 @@ zip = { version = "4", default-features = false, features = ["deflate-flate2"] }
 csv = "1"
 strsim = "0.11"
 unicode-normalization = "0.1"
+# MetroQueue receiver (metroqueue/): DNS-SD advertising, token hashes, the gzipped /api/sync upload
+# and the computer's name. Only mdns-sd is new; sha2, flate2 and gethostname were in the tree.
+mdns-sd = { version = "0.21", default-features = false }
+sha2 = "0.10"
+flate2 = "1"
+gethostname = "1"
 
 [dev-dependencies]
 # Mock runtime for the IPC guard test (lib.rs `only_ui`).

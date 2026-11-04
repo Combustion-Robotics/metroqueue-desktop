@@ -20,6 +20,7 @@ mod local;
 mod lyrics;
 mod matugen;
 mod media;
+mod metroqueue;
 mod mini;
 mod mqsync;
 #[cfg(target_os = "linux")]
@@ -922,6 +923,9 @@ pub fn run() {
             // not a custom scheme.
             videoproxy::start(app_state.clone());
 
+            // MetroQueue phones control this app like a MetroQueue TV (docs/metroqueue).
+            metroqueue::init(&handle);
+
             // mpv's audio goes through a second loopback socket so the open-ended range ffmpeg
             // sends becomes bounded ranges upstream, which is the difference between 32 KB/s and
             // several MB/s on the same URL. audioproxy.rs has the measurements.
@@ -1156,6 +1160,11 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(only_ui(tauri::generate_handler![
+            metroqueue::mq_get_enabled,
+            metroqueue::mq_set_enabled,
+            metroqueue::mq_paired_devices,
+            metroqueue::mq_forget_device,
+            metroqueue::mq_cancel_pairing,
             commands::search,
             commands::search_all,
             commands::search_suggestions,
