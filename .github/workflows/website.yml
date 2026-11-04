@@ -17,6 +17,8 @@ concurrency:
 
 jobs:
   deploy:
+    # Upstream's site; the fork has no Pages site.
+    if: github.repository == 'SimoHypers/limusic'
     runs-on: ubuntu-latest
     environment:
       name: github-pages

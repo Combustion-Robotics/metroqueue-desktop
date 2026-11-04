@@ -1,0 +1,123 @@
+name: Fork builds
+
+# Releases for MetroQueue Desktop, built by the three platform workflows below.
+# main -> a normal release v<version> the first time a version is built, marked Latest once Linux,
+#         Windows and macOS are all attached. Bump "version" in src-tauri/tauri.conf.json and
+#         Cargo.toml to publish the next one.
+# dev  -> a dev-v<version>-<sha7> pre-release per push.
+#
+# Updater signing, one-time setup (TODO): run `cargo tauri signer generate -w ~/.tauri/metroqueue.key`,
+# put the public key in plugins.updater.pubkey in src-tauri/tauri.conf.json, and add the repo
+# secrets TAURI_SIGNING_PRIVATE_KEY (the key file's contents) and TAURI_SIGNING_PRIVATE_KEY_PASSWORD.
+# Until then every build is unsigned: no .sig and no latest.json, so installed apps fall back to
+# offering the download page instead of self-updating.
+on:
+  push:
+    branches: [main, dev]
+    paths-ignore:
+      - "**.md"
+      - "website/**"
+      - ".github/ISSUE_TEMPLATE/**"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+# Not cancelled: a cancelled run would leave a release with half its binaries attached.
+concurrency:
+  group: fork-builds-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    if: github.repository != 'SimoHypers/limusic'
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.rel.outputs.tag }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      - name: Create the release
+        id: rel
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HAS_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY != '' }}
+        run: |
+          set -euo pipefail
+          VERSION="$(jq -r .version src-tauri/tauri.conf.json)"
+          CARGO_VERSION="$(sed -n 's/^version *= *"\(.*\)"/\1/p' Cargo.toml | head -1)"
+          [ "$CARGO_VERSION" = "$VERSION" ] \
+            || { echo "::error::Cargo.toml says $CARGO_VERSION but tauri.conf.json says $VERSION. Bump both"; exit 1; }
+          NOTES="Built from ${GITHUB_SHA::7}: $(git log -1 --pretty=%s)"
+
+          if [ "$GITHUB_REF_NAME" = main ]; then
+            TAG="v$VERSION"
+            TITLE="MetroQueue Desktop $VERSION"
+            FLAGS=(--latest=false) # the finalize job flips it once every platform is attached
+            # Done once finalize marked it Latest; a release that never got there is rebuilt in place.
+            if [ "$(gh api "repos/$GITHUB_REPOSITORY/releases/latest" --jq .tag_name 2>/dev/null || true)" = "$TAG" ]; then
+              echo "::notice::$TAG is already released. Bump the version to publish a new release."
+              exit 0
+            fi
+          else
+            TAG="dev-v$VERSION-${GITHUB_SHA::7}"
+            TITLE="dev Build ${TAG#dev-}"
+            FLAGS=(--prerelease --latest=false)
+          fi
+
+          # The platform jobs merge their entries into this manifest; no key, no manifest.
+          FILES=()
+          if [ "$HAS_KEY" = true ]; then
+            [ -n "$(jq -r '.plugins.updater.pubkey' src-tauri/tauri.conf.json)" ] \
+              || { echo "::error::TAURI_SIGNING_PRIVATE_KEY is set but plugins.updater.pubkey in src-tauri/tauri.conf.json is empty"; exit 1; }
+            jq -n --arg v "$VERSION" --arg n "$NOTES" --arg d "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+              '{version: $v, notes: $n, pub_date: $d, platforms: {}}' > latest.json
+            FILES=(latest.json)
+          else
+            echo "::warning::TAURI_SIGNING_PRIVATE_KEY is not set: unsigned build, no self-update (see the header of fork-builds.yml)"
+          fi
+
+          # Reused when it exists: a re-run, or a main release that never finished.
+          if ! gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release create "$TAG" "${FILES[@]}" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
+              --title "$TITLE" --notes "$NOTES" "${FLAGS[@]}"
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+  linux:
+    needs: prepare
+    if: needs.prepare.outputs.tag != ''
+    uses: ./.github/workflows/linux-release.yml
+    with:
+      tag: ${{ needs.prepare.outputs.tag }}
+    secrets: inherit
+
+  windows:
+    needs: prepare
+    if: needs.prepare.outputs.tag != ''
+    uses: ./.github/workflows/windows-release.yml
+    with:
+      tag: ${{ needs.prepare.outputs.tag }}
+    secrets: inherit
+
+  macos:
+    needs: prepare
+    if: needs.prepare.outputs.tag != ''
+    uses: ./.github/workflows/macos-release.yml
+    with:
+      tag: ${{ needs.prepare.outputs.tag }}
+    secrets: inherit
+
+  # Latest is what the updater reads (/releases/latest/download/latest.json), so it only moves once
+  # all three platforms succeeded. A failed leg can be fixed with "Re-run failed jobs".
+  finalize:
+    needs: [prepare, linux, windows, macos]
+    if: github.ref_name == 'main' && needs.prepare.outputs.tag != ''
+    runs-on: ubuntu-latest
+    steps:
+      - name: Mark the release Latest
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release edit "${{ needs.prepare.outputs.tag }}" --latest --repo "$GITHUB_REPOSITORY"

@@ -29,7 +29,7 @@ name: macOS release binaries
 #   Actions ▸ macOS release binaries ▸ Run workflow ▸ tag = v0.4.5
 #
 # Requires repo secrets (same set as the other two):
-#   TAURI_SIGNING_PRIVATE_KEY / TAURI_SIGNING_PRIVATE_KEY_PASSWORD   (mandatory, no sig no update)
+#   TAURI_SIGNING_PRIVATE_KEY / TAURI_SIGNING_PRIVATE_KEY_PASSWORD   (optional, without them the build is unsigned and gets no self-update)
 #   LASTFM_API_KEY / LASTFM_API_SECRET                               (optional, warn-only)
 
 # DISPATCH ONLY, ON PURPOSE, for the reason spelled out in the other two workflows: Actions caches
@@ -37,6 +37,16 @@ name: macOS release binaries
 # never read the cache the previous release wrote. Dispatching from master shares one cache across
 # releases while the checkout below still pins the build to the tag.
 on:
+  # Called by fork-builds.yml on every push to main/dev, with the release it just created.
+  workflow_call:
+    inputs:
+      tag:
+        required: true
+        type: string
+      dry_run:
+        required: false
+        default: false
+        type: boolean
   workflow_dispatch:
     inputs:
       tag:
@@ -91,7 +101,9 @@ jobs:
         run: |
           VERSION="$(jq -r .version src-tauri/tauri.conf.json)"
           echo "VERSION=$VERSION" >> "$GITHUB_ENV"
-          if [ "v$VERSION" != "${{ steps.rel.outputs.tag }}" ]; then
+          # A dev build's tag is dev-v<version>-<sha7> (fork-builds.yml): a prerelease of the same version.
+          if [[ "${{ steps.rel.outputs.tag }}" == dev-v"$VERSION"-* ]]; then :
+          elif [ "v$VERSION" != "${{ steps.rel.outputs.tag }}" ]; then
             if [ "${{ inputs.dry_run }}" = "true" ]; then
               echo "::warning::dry run: built ref is ${{ steps.rel.outputs.tag }} but the app version is $VERSION"
             else
@@ -217,8 +229,8 @@ jobs:
           # to the filesystem.
           tauri build --bundles app --config \
             '{"build":{"beforeBuildCommand":""},"bundle":{"createUpdaterArtifacts":false}}'
-          [ -d "target/release/bundle/macos/limusic.app" ] \
-            || { echo "::error::no .app at target/release/bundle/macos/limusic.app"; find target/release/bundle -maxdepth 2; exit 1; }
+          [ -d "target/release/bundle/macos/MetroQueue.app" ] \
+            || { echo "::error::no .app at target/release/bundle/macos/MetroQueue.app"; find target/release/bundle -maxdepth 2; exit 1; }
 
       # THE step this workflow exists for. dylibbundler walks the binary's dependency graph, copies
       # every non-system dylib into Contents/Frameworks and rewrites the install names to
@@ -234,7 +246,7 @@ jobs:
         timeout-minutes: 6
         run: |
           set -euo pipefail
-          APP=target/release/bundle/macos/limusic.app
+          APP=target/release/bundle/macos/MetroQueue.app
           # The executable inside the bundle is NOT named after the bundle: productName names the
           # .app, the cargo package names the binary (limusic-app). Ask the bundle rather than
           # guessing, so a rename of either can't quietly break this.
@@ -257,7 +269,7 @@ jobs:
       - name: Drop the duplicate rpaths dylibbundler leaves behind
         run: |
           set -euo pipefail
-          APP=target/release/bundle/macos/limusic.app
+          APP=target/release/bundle/macos/MetroQueue.app
           find "$APP" -type f -print0 | while IFS= read -r -d '' f; do
             # `otool -l` on a non-Mach-O file just prints nothing useful, so no file-type test is
             # needed; the awk below yields no rpaths and the inner loop does nothing.
@@ -293,7 +305,7 @@ jobs:
       - name: Re-sign the bundle
         run: |
           set -euo pipefail
-          APP=target/release/bundle/macos/limusic.app
+          APP=target/release/bundle/macos/MetroQueue.app
           codesign --force --deep --sign - "$APP"
           codesign --verify --deep --strict --verbose=2 "$APP"
 
@@ -304,7 +316,7 @@ jobs:
       - name: Check no Mach-O lists a duplicate rpath
         run: |
           set -euo pipefail
-          APP=target/release/bundle/macos/limusic.app
+          APP=target/release/bundle/macos/MetroQueue.app
           # No `|| true` here, unlike the Homebrew guard: that one needs it because grep exits 1 on
           # every clean file, whereas uniq -d exits 0, so a non-zero pipeline here means otool
           # could not read the file. errexit does not reach inside a command substitution (and
@@ -334,7 +346,7 @@ jobs:
       - name: Check nothing still links to Homebrew
         run: |
           set -euo pipefail
-          APP=target/release/bundle/macos/limusic.app
+          APP=target/release/bundle/macos/MetroQueue.app
           # [[:space:]], not \s: this runs under BSD grep, whose POSIX regex has no \s, and a
           # pattern that quietly matches nothing is worse than no guard at all.
           #
@@ -364,18 +376,21 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         run: |
           set -euo pipefail
-          if [ -z "${TAURI_SIGNING_PRIVATE_KEY:-}" ]; then
-            echo "::error::TAURI_SIGNING_PRIVATE_KEY secret is not set, the build would produce an unsignable update"
-            exit 1
-          fi
-          TAR="target/release/bundle/macos/limusic_${VERSION}_aarch64.app.tar.gz"
+          TAR="target/release/bundle/macos/MetroQueue_${VERSION}_aarch64.app.tar.gz"
           # cd into the bundle dir rather than `tar -C`, so there is no question about whether the
           # archive path is resolved before or after the chdir. The archive must contain the .app
           # at its root: that is what the updater extracts over the installed one.
           (cd target/release/bundle/macos \
-            && COPYFILE_DISABLE=1 tar -czf "limusic_${VERSION}_aarch64.app.tar.gz" limusic.app)
-          tauri signer sign "$TAR"
-          [ -f "$TAR.sig" ] || { echo "::error::tauri signer produced no .sig for $TAR"; exit 1; }
+            && COPYFILE_DISABLE=1 tar -czf "MetroQueue_${VERSION}_aarch64.app.tar.gz" MetroQueue.app)
+          # Unsigned until the fork has its own updater key (see fork-builds.yml): the DMG still ships.
+          if [ -n "${TAURI_SIGNING_PRIVATE_KEY:-}" ]; then
+            tauri signer sign "$TAR"
+            [ -f "$TAR.sig" ] || { echo "::error::tauri signer produced no .sig for $TAR"; exit 1; }
+            echo "SIGNED=true" >> "$GITHUB_ENV"
+          else
+            echo "::warning::TAURI_SIGNING_PRIVATE_KEY secret is not set, building without an updater signature"
+            echo "SIGNED=false" >> "$GITHUB_ENV"
+          fi
           echo "TAR=$TAR" >> "$GITHUB_ENV"
           echo "updater archive: $(du -h "$TAR" | cut -f1)"
 
@@ -387,8 +402,8 @@ jobs:
           set -euo pipefail
           rm -rf /tmp/roundtrip && mkdir -p /tmp/roundtrip
           tar -xzf "$TAR" -C /tmp/roundtrip
-          codesign --verify --deep --strict --verbose=2 /tmp/roundtrip/limusic.app
-          test -x "/tmp/roundtrip/limusic.app/Contents/MacOS/$EXECUTABLE"
+          codesign --verify --deep --strict --verbose=2 /tmp/roundtrip/MetroQueue.app
+          test -x "/tmp/roundtrip/MetroQueue.app/Contents/MacOS/$EXECUTABLE"
           echo "the extracted bundle verifies and its binary is executable"
 
       # hdiutil rather than tauri's dmg bundler: that one drives AppleScript to lay the window out
@@ -397,14 +412,14 @@ jobs:
       - name: Build the DMG
         run: |
           set -euo pipefail
-          APP=target/release/bundle/macos/limusic.app
-          DMG="target/release/bundle/dmg/limusic_${VERSION}_aarch64.dmg"
-          STAGE="$(mktemp -d)/Limusic"
+          APP=target/release/bundle/macos/MetroQueue.app
+          DMG="target/release/bundle/dmg/MetroQueue_${VERSION}_aarch64.dmg"
+          STAGE="$(mktemp -d)/MetroQueue"
           mkdir -p "$STAGE" "$(dirname "$DMG")"
           # ditto, not cp: it is the copy that preserves a bundle's metadata and signature intact.
-          ditto "$APP" "$STAGE/limusic.app"
+          ditto "$APP" "$STAGE/MetroQueue.app"
           ln -s /Applications "$STAGE/Applications"
-          hdiutil create -volname "Limusic" -srcfolder "$STAGE" -ov -format UDZO "$DMG"
+          hdiutil create -volname "MetroQueue" -srcfolder "$STAGE" -ov -format UDZO "$DMG"
           echo "DMG=$DMG" >> "$GITHUB_ENV"
           echo "dmg: $(du -h "$DMG" | cut -f1)"
 
@@ -508,6 +523,7 @@ jobs:
           RELEASE_ID="$(retry 3 gh api "repos/$GITHUB_REPOSITORY/releases/tags/$TAG" --jq .id)"
           [ -n "$RELEASE_ID" ] || { echo "::error::no release found for $TAG"; exit 1; }
 
+          if [ "$SIGNED" != true ]; then retry 5 upload "$DMG"; exit 0; fi
           retry 5 upload "$DMG" "$TAR" "$TAR.sig"
 
           # latest.json has three writers now and no compare-and-swap, so: merge, upload, read back,
@@ -534,92 +550,3 @@ jobs:
             [ "$attempt" -lt 5 ] || { echo "::error::darwin-aarch64 kept getting clobbered out of latest.json"; exit 1; }
             echo "another job clobbered the manifest, re-merging"
           done
-
-          # Promote to "Latest" only once every platform is in the manifest.
-          #
-          # The updater resolves through /releases/latest/download/latest.json, so whatever is
-          # Latest is what every installed client reads. This block runs identically at the end of
-          # all three release workflows, and only the leg that finds all three keys present flips
-          # the flag. Which leg that is depends on who finishes last, and it does not matter.
-          #
-          # Linux used to own this flip and checked only for its own key, which promoted incomplete
-          # manifests two ways: for a few minutes while Windows or macOS was still building, since
-          # Linux usually finishes first, and for good when one of them failed outright. v0.6.6 was
-          # the second: the macOS leg failed, Linux marked the release Latest anyway, and every
-          # Mac's update check read a manifest with no darwin-aarch64 entry.
-          #
-          # If a leg never finishes, nothing flips: /releases/latest/download/latest.json keeps
-          # resolving to the previous, complete release until someone re-dispatches the failed
-          # workflow. That is deliberate. It holds back the platforms that did build (v0.7.3's Linux
-          # stall looked exactly like this, and still would), but no installed client ever reads a
-          # manifest with no entry for its platform, and the release sitting un-Latest is visible.
-          #
-          # Duplicated verbatim in linux-release.yml, windows-release.yml and macos-release.yml on
-          # purpose: a dispatched run takes the workflow from master but checks out the tag, so a
-          # shared script or composite action would come from the tag and a re-dispatch against an
-          # older one would not pick this up. Keep the three copies byte-identical.
-          #
-          # A release candidate (a version with a `-`, 1.1.0-rc.1) is never Latest, so no stable
-          # install ever reads it. What it moves instead is the beta pointer: a permanent prerelease
-          # tagged `beta` holding one latest.json, which installs on the beta channel read
-          # (`check_beta_update` in commands.rs). A complete stable release moves the pointer too when
-          # it is ahead of what the pointer holds, so beta installs land on 1.1.0 once it ships but
-          # stay on 1.1.0-rc.2 through a 1.0.3 fix. It is also rewritten when it holds this same
-          # version, so a re-run that replaces a binary in place refreshes the beta copy of its
-          # signature: after 1.2.0's Windows installer was swapped (#436), the stale copy failed every
-          # beta install's signature check. The pointer never moves backwards here, so a re-dispatch
-          # against an old tag cannot roll the beta channel back; that is done by hand (RELEASING.md §8).
-          REQUIRED_PLATFORMS='["darwin-aarch64","linux-x86_64","windows-x86_64"]'
-          retry 3 fetch_manifest final
-          HAVE="$(jq -c '.platforms | keys' final/latest.json)"
-          if [ "$HAVE" != "$REQUIRED_PLATFORMS" ]; then
-            echo "::notice::not promoting yet, latest.json carries $HAVE and needs $REQUIRED_PLATFORMS"
-            exit 0
-          fi
-          if [[ "$VERSION" == *-* ]]; then
-            echo "$TAG is a release candidate: never Latest, beta channel only"
-          else
-            retry 3 gh release edit "$TAG" --latest --repo "$GITHUB_REPOSITORY"
-            echo "All three platforms present, marked $TAG as Latest: $HAVE"
-          fi
-
-          # semver_gt A B: A ranks above B. x.y.z numerically, then a release above its own
-          # prereleases, then prerelease suffixes by version sort. `sort -V` alone gets the middle
-          # rule backwards (it puts 1.1.0-rc.1 after 1.1.0). Same function as scripts/release.sh.
-          semver_gt() {
-            [ "$1" != "$2" ] || return 1
-            local a="${1%%-*}" b="${2%%-*}"
-            if [ "$a" != "$b" ]; then
-              [ "$(printf '%s\n%s\n' "$a" "$b" | sort -V | tail -1)" = "$a" ]
-              return
-            fi
-            [ "$1" != "$a" ] || return 0
-            [ "$2" != "$b" ] || return 1
-            [ "$(printf '%s\n%s\n' "${1#*-}" "${2#*-}" | sort -V | tail -1)" = "${1#*-}" ]
-          }
-          # Created once by hand (RELEASING.md §8), and scripts/release.sh refuses to run without it.
-          # An RC exists for the beta channel, so it fails without one; a stable release is complete
-          # without it and only warns.
-          if ! BETA_ID="$(retry 3 gh api "repos/$GITHUB_REPOSITORY/releases/tags/beta" --jq .id)"; then
-            if [[ "$VERSION" == *-* ]]; then
-              echo "::error::no beta release to point at $TAG, so no install can get it. Create it (RELEASING.md §8) and re-dispatch"
-              exit 1
-            fi
-            echo "::warning::no beta release, so the beta channel was not moved to $TAG"
-            exit 0
-          fi
-          # Read the pointer through the asset list, so a transient error fails the step instead of
-          # reading as "empty" and letting an older version overwrite a newer one.
-          BETA_VERSION=""
-          HAS_MANIFEST="$(retry 3 gh api "repos/$GITHUB_REPOSITORY/releases/$BETA_ID/assets" \
-            --jq '[.[] | select(.name == "latest.json")] | length')"
-          if [ "$HAS_MANIFEST" != 0 ]; then
-            (TAG=beta; retry 3 fetch_manifest beta)
-            BETA_VERSION="$(jq -r .version beta/latest.json)"
-          fi
-          if [ -z "$BETA_VERSION" ] || [ "$VERSION" = "$BETA_VERSION" ] || semver_gt "$VERSION" "$BETA_VERSION"; then
-            (RELEASE_ID="$BETA_ID"; retry 3 upload final/latest.json)
-            echo "beta channel moved to $VERSION (was ${BETA_VERSION:-empty})"
-          else
-            echo "beta channel stays on $BETA_VERSION, which is not behind $VERSION"
-          fi
