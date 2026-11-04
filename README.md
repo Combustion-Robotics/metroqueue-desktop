@@ -1,18 +1,14 @@
 <div align="center">
 
-<img src="./assets/docs/limusic-github-image.png" alt="Limusic Banner" width="100%">
+<img src="./src-tauri/icons/128x128@2x.png" alt="MetroQueue Desktop logo" width="128">
 
-# Limusic
+# MetroQueue Desktop
 
 **A native desktop YouTube Music client. Rust + Tauri, ad-free, no Electron.**
 
 <p align="center">
-  <a href="https://github.com/SimoHypers/limusic/releases/latest"><img alt="GitHub Downloads" src="https://img.shields.io/github/downloads/SimoHypers/limusic/total?style=for-the-badge&label=DOWNLOADS&color=a4c400"></a>
-  <a href="https://github.com/SimoHypers/limusic/releases/latest"><img alt="GitHub Release" src="https://img.shields.io/github/v/release/SimoHypers/limusic?display_name=release&style=for-the-badge&color=a10935"></a>
-  <img alt="License" src="https://img.shields.io/github/license/SimoHypers/limusic?style=for-the-badge&color=1881cc">
-  <a href="https://hosted.weblate.org/engage/limusic/"><img alt="Translation status" src="https://img.shields.io/weblate/progress/limusic?server=https%3A%2F%2Fhosted.weblate.org&style=for-the-badge&label=TRANSLATED&color=6a3fb5"></a>
-  <a href="https://simohypers.github.io/limusic/"><img alt="Website" src="https://img.shields.io/badge/WEBSITE-limusic-e5486e?style=for-the-badge"></a>
-  <a href="https://ko-fi.com/simohypers"><img alt="Support on Ko-fi" src="https://img.shields.io/badge/KO--FI-support-ff5e5b?style=for-the-badge&logo=kofi&logoColor=white"></a>
+  <a href="https://github.com/Combustion-Robotics/metroqueue-desktop/releases/latest"><img alt="GitHub Release" src="https://img.shields.io/github/v/release/Combustion-Robotics/metroqueue-desktop?display_name=release&style=for-the-badge&color=a10935"></a>
+  <img alt="License" src="https://img.shields.io/github/license/Combustion-Robotics/metroqueue-desktop?style=for-the-badge&color=1881cc">
   <br>
   <img alt="Linux" src="https://img.shields.io/badge/Linux-FCC624?style=for-the-badge&logo=linux&logoColor=black">
   <img alt="Windows" src="https://img.shields.io/badge/Windows-0078D6?style=for-the-badge&logoColor=white">
@@ -21,10 +17,15 @@
   <img alt="Rust" src="https://img.shields.io/badge/Rust-000000?style=for-the-badge&logo=rust&logoColor=white">
 </p>
 
-**Limusic** talks directly to YouTube's internal API and plays audio through libmpv: no bundled
-browser runtime, no backend server, no ads in the audio. It started as a desktop rebuild of the
-playback engine behind [Metrolist](https://github.com/mostafaalagamy/Metrolist), an Android
-YouTube Music client, and grew from there.
+**MetroQueue Desktop** is the desktop companion to MetroQueue, the Android YouTube Music client.
+It is based on [Limusic](https://github.com/SimoHypers/limusic) by SimoHypers, which started as a
+desktop rebuild of the playback engine behind
+[Metrolist](https://github.com/MetrolistGroup/Metrolist). All credit for the app this fork is built
+on goes to them. Please report bugs in MetroQueue Desktop
+[here](https://github.com/Combustion-Robotics/metroqueue-desktop/issues), not upstream.
+
+It talks directly to YouTube's internal API and plays audio through libmpv: no bundled browser
+runtime, no backend server, no ads in the audio.
 
 </div>
 
@@ -51,7 +52,7 @@ YouTube Music client, and grew from there.
 - **System tray**: close the window, keep the music; play/pause and skip from the tray, optional start-on-login
 - **Listen Together**: synced listening rooms over a small self-hosted relay
 - **Keyboard and mouse**: `Ctrl+K` searches from anywhere, `Ctrl+H` lists every shortcut, right-click menus throughout, `Ctrl` and the wheel zooms the interface
-- **Eighteen languages**: English, German, Spanish, French, Indonesian, Italian, Japanese, Korean, Polish, Brazilian Portuguese, Romanian, Russian, Tamil, Turkish, Ukrainian, Vietnamese, and Simplified and Traditional Chinese, with more in progress on [Weblate](https://hosted.weblate.org/projects/limusic/)
+- **Eighteen languages**: English, German, Spanish, French, Indonesian, Italian, Japanese, Korean, Polish, Brazilian Portuguese, Romanian, Russian, Tamil, Turkish, Ukrainian, Vietnamese, and Simplified and Traditional Chinese (translations come from upstream Limusic)
 - **Self-updating builds** (AppImage on Linux, setup.exe on Windows, .app on macOS)
 - **Make it yours**: accent palettes, custom colors, your own fonts, corner roundness, a custom app icon, and an adaptive theme that recolors the app from the playing cover
 
@@ -61,7 +62,7 @@ YouTube Music client, and grew from there.
 
 <table>
   <tr>
-    <td><img src="website/src/assets/screen-playlist.webp" alt="A playlist in Limusic"></td>
+    <td><img src="website/src/assets/screen-playlist.webp" alt="A playlist"></td>
     <td><img src="website/src/assets/screen-lyrics.webp" alt="Word-by-word synced lyrics"></td>
   </tr>
   <tr>
@@ -75,7 +76,7 @@ YouTube Music client, and grew from there.
 <h2 align="center">Download & Install</h2>
 
 <p align="center">
-  <a href="https://github.com/SimoHypers/limusic/releases/latest">
+  <a href="https://github.com/Combustion-Robotics/metroqueue-desktop/releases/latest">
     <img src="https://img.shields.io/badge/GitHub_Releases-100000?style=for-the-badge&logo=github&logoColor=white" height="40">
   </a>
 </p>
@@ -86,17 +87,11 @@ YouTube Music client, and grew from there.
 | Windows | `.msi` | Plain installer, no auto-update |
 | Linux | `.AppImage` | Self-updating, libmpv bundled. Needs glibc 2.39+ (Ubuntu 24.04+, Debian 13+, Fedora 40+) |
 | Linux (Ubuntu/Debian) | `.deb` | No self-update. Needs Ubuntu 24.04+ / Debian 13+; apt pulls libmpv and webkit2gtk in for you |
-| Linux (Fedora/RHEL) | `.rpm` | Needs `mpv-libs` installed (`sudo dnf install mpv-libs`). No updates, redownload each release |
-| macOS (Apple Silicon) | `.dmg` | Self-updating. Unsigned, so the first launch needs `xattr -dr com.apple.quarantine /Applications/limusic.app` |
+| macOS (Apple Silicon) | `.dmg` | Self-updating. Unsigned, so the first launch needs `xattr -dr com.apple.quarantine /Applications/MetroQueue.app` |
 | macOS (Intel) | none | Build from source, see [docs/BUILD-PLATFORMS.md](docs/BUILD-PLATFORMS.md) |
 
-Community-maintained repositories, packaged and updated by their maintainers rather than by this project:
-
-| Platform | Source | Notes |
-|---|---|---|
-| Linux (Arch) | [AUR](https://aur.archlinux.org/packages/limusic-bin) | `yay -S limusic-bin`. Maintained by [@xiryuudev](https://github.com/xiryuudev), updates through pacman |
-| Linux (Fedora COPR) | [COPR](https://copr.fedorainfracloud.org/coprs/oguzkarayemis/limusic/) | `sudo dnf copr enable oguzkarayemis/limusic` then `sudo dnf install limusic`. Maintained by [@oguzkarayemis](https://github.com/oguzkarayemis), updates through dnf |
-| Linux (openSUSE Tumbleweed) | [OBS](https://build.opensuse.org/package/show/home:itachi_re/limusic) | `sudo zypper ar -p 100 https://download.opensuse.org/repositories/home:/itachi_re/openSUSE_Tumbleweed/home:itachi_re.repo` then `sudo zypper install limusic`. Maintained by [@itachi-re](https://github.com/itachi-re), updates through zypper. The repo carries the maintainer's other packages too, so `-p 100` keeps it below the distro repos |
+Every push to `dev` is published as a pre-release (`dev-v<version>-<commit>`); `main` publishes a
+`v<version>` release once per version.
 
 ---
 
@@ -106,7 +101,7 @@ Last.fm lives in the title bar, next to the window controls, and ListenBrainz co
 Settings ▸ Scrobbling. Both get the same cleaned-up track (the tab's preview shows what each
 play counts as).
 
-- **Last.fm**: click the Last.fm mark, approve Limusic in the browser tab that
+- **Last.fm**: click the Last.fm mark, approve MetroQueue Desktop in the browser tab that
   opens, and you're connected for good. Tracks scrobble at the halfway point (or
   four minutes, whichever comes first), which is Last.fm's own rule. Click again
   to see the account or disconnect.
@@ -177,28 +172,9 @@ suggestion.
 
 ## Translations
 
-Limusic is translated on [Weblate](https://hosted.weblate.org/engage/limusic/),
-who host it free for libre projects.
-
-<a href="https://hosted.weblate.org/engage/limusic/">
-  <img src="https://hosted.weblate.org/widget/limusic/ui/multi-auto.svg" alt="Translation status">
-</a>
-
-English, Spanish, French, Turkish, Brazilian Portuguese and Indonesian ship in
-the app today.
-The badge above shows everything else in flight.
-
-**Translate on Weblate, not in a pull request.** Weblate keeps its own copy of
-the catalogs, so a hand-edited `fr.json` merged here puts the two out of sync
-and the next batch of real translations arrives as a merge conflict. Weblate
-also shows you the English original beside each string, flags translations that
-went stale when the English changed, checks that placeholders like `{count}`
-survived, and opens the pull request for you. Anything untranslated falls back
-to English in the app, so partial work is safe to submit.
-
-`en.json` is the exception: it changes by hand, in whichever pull request
-changes the UI. Switching a finished language on in the picker takes a small
-code change too, see [CONTRIBUTING.md](CONTRIBUTING.md#translations).
+Translations are maintained by upstream Limusic on
+[Weblate](https://hosted.weblate.org/engage/limusic/) and arrive here when upstream is merged, so
+please don't send translation pull requests to this repository.
 
 ---
 
@@ -222,7 +198,7 @@ Windows and macOS instructions live in [docs/BUILD-PLATFORMS.md](docs/BUILD-PLAT
 - A pure Rust crate speaks YouTube's InnerTube API, impersonating several
   official client identities and falling back between them when one fails.
 - YouTube's stream URLs are protected by obfuscated JavaScript (the signature
-  cipher and the `n` parameter) and by BotGuard attestation. Limusic runs that
+  cipher and the `n` parameter) and by BotGuard attestation. The app runs that
   JavaScript where it expects to run, in a real webview, hidden, and never lets
   any of it touch the UI process.
 - Audio goes through libmpv: gapless transitions, an on-disk cache, and
@@ -232,22 +208,11 @@ Windows and macOS instructions live in [docs/BUILD-PLATFORMS.md](docs/BUILD-PLAT
 
 ---
 
-## Star History
+## Credits
 
-<a href="https://www.star-history.com/?repos=simohypers%2Flimusic&type=date&legend=top-left">
- <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=simohypers/limusic&type=date&theme=dark&legend=top-left" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=simohypers/limusic&type=date&legend=top-left" />
-   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=simohypers/limusic&type=date&legend=top-left" />
- </picture>
-</a>
-
----
-
-## Support
-
-Limusic is free and stays free. If it earned a coffee,
-[ko-fi.com/simohypers](https://ko-fi.com/simohypers) is where to leave one.
+- [Limusic](https://github.com/SimoHypers/limusic) by SimoHypers: the app this is a fork of
+- [Metrolist](https://github.com/MetrolistGroup/Metrolist): the Android client that Limusic's
+  playback engine and MetroQueue come from
 
 ---
 
