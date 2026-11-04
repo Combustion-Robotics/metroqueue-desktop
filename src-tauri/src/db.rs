@@ -267,6 +267,13 @@ impl Db {
                 manual          INTEGER NOT NULL DEFAULT 0,
                 updated_at      INTEGER NOT NULL
             );
+            -- Smart mix: a song's analysed start (region 0) or end (1), `MixAnalysis` JSON.
+            CREATE TABLE IF NOT EXISTS mix_analysis (
+                video_id TEXT NOT NULL,
+                region   INTEGER NOT NULL,
+                json     TEXT NOT NULL,
+                PRIMARY KEY (video_id, region)
+            );
             "#,
         )?;
         // Migrate pre-Phase-4 DBs that predate the loudness_db column. Errors ("duplicate column")
@@ -806,6 +813,26 @@ impl Db {
     pub fn delete_lyrics(&self, video_id: &str) {
         let conn = self.0.lock().unwrap();
         let _ = conn.execute("DELETE FROM lyrics_cache WHERE video_id = ?1", [video_id]);
+    }
+
+    // --- smart mix analyses (crate::mix) -------------------------------------------------------
+
+    pub fn get_mix_analysis(&self, video_id: &str, region: i64) -> Option<String> {
+        let conn = self.0.lock().unwrap();
+        conn.query_row(
+            "SELECT json FROM mix_analysis WHERE video_id = ?1 AND region = ?2",
+            rusqlite::params![video_id, region],
+            |r| r.get(0),
+        )
+        .ok()
+    }
+
+    pub fn put_mix_analysis(&self, video_id: &str, region: i64, json: &str) {
+        let conn = self.0.lock().unwrap();
+        let _ = conn.execute(
+            "INSERT OR REPLACE INTO mix_analysis(video_id, region, json) VALUES(?1, ?2, ?3)",
+            rusqlite::params![video_id, region, json],
+        );
     }
 
     // --- lyrics cache -----------------------------------------------------------------------

@@ -2433,7 +2433,9 @@ impl AppState {
         // Headers are global in mpv; the direct-URL clients need none beyond UA, which the
         // current track already set. Just append the URL.
         let url = mpv_stream_url(&data);
-        if let Err(e) = self.player.enqueue(&url) {
+        let Some(from) = q.items.get(q.current).cloned() else { return };
+        let enqueued = crate::mix::enqueue(self, &from, &q.items[next_idx], q.duration, &url);
+        if let Err(e) = enqueued {
             tracing::warn!(error = %e, "enqueue lookahead failed");
             return;
         }
@@ -2757,6 +2759,14 @@ impl AppState {
         f64::from_bits(self.latest_position.load(Ordering::SeqCst))
     }
 
+    /// The playing track, the primed lookahead after it and mpv's duration of the first: the pair
+    /// a Mix plan is for (`crate::mix`).
+    pub(crate) async fn mix_pair(&self) -> Option<(String, String, f64)> {
+        let q = self.queue.lock().await;
+        let next = q.items.get(q.lookahead_loaded?)?.video_id.clone();
+        Some((q.items.get(q.current)?.video_id.clone(), next, q.duration))
+    }
+
     /// Advance/rewind the queue (OS "next"/"previous" keys + the UI's skip buttons). `play_index`
     /// itself no-ops for guests.
     pub async fn next_in_queue(self: &std::sync::Arc<Self>) {
@@ -2768,7 +2778,14 @@ impl AppState {
             next_index(q.items.len(), q.current, repeat)
         };
         match i {
-            Some(i) => self.play_index(i).await,
+            Some(i) => {
+                // Blended into the primed lookahead: its `TrackEnded` advances the queue.
+                let primed = self.queue.lock().await.lookahead_loaded == Some(i);
+                if !self.lt.is_guest().await && crate::mix::skip(self, primed) {
+                    return;
+                }
+                self.play_index(i).await
+            }
             // Repeat off at the tail. Autoplay tops the queue up asynchronously (on track start /
             // track end), so the continuation may simply not have landed yet — fetch it now rather
             // than leaving Skip a dead button. Still a no-op when autoplay is off, when the user is
@@ -4873,14 +4890,16 @@ pub fn saved_volume(db: &Db) -> i64 {
     v.filter(|v| (0..=100).contains(v)).unwrap_or(100)
 }
 
-/// Crossfade length in seconds, or `None` when it's off. Experimental, so off unless asked for,
-/// and clamped to the range the settings slider offers in case the stored value predates it.
+/// Crossfade length in seconds, or `None` when it's off. Experimental, so off unless asked for.
 pub fn saved_crossfade(db: &Db) -> Option<f64> {
-    if db.get_setting("crossfade").as_deref() != Some("true") {
-        return None;
-    }
+    (db.get_setting("crossfade").as_deref() == Some("true")).then(|| saved_crossfade_secs(db))
+}
+
+/// The Mix duration setting, 8 s by default as on MetroQueue, clamped to the range the settings
+/// slider (and the phone's) offers in case the stored value predates it.
+pub fn saved_crossfade_secs(db: &Db) -> f64 {
     let secs = db.get_setting("crossfade_secs").and_then(|s| s.parse::<f64>().ok());
-    Some(secs.filter(|s| s.is_finite()).unwrap_or(5.0).clamp(1.0, 10.0))
+    secs.filter(|s| s.is_finite()).unwrap_or(8.0).clamp(1.0, 15.0)
 }
 
 /// How far into a track a play counts (context/01 §registerPlayback): halfway, capped at 30s.

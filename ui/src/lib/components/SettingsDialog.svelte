@@ -21,7 +21,6 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import { Switch } from '$lib/components/ui/switch';
-	import { Slider } from '$lib/components/ui/slider';
 	import { Alert, AlertDescription } from '$lib/components/ui/alert';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import * as Popover from '$lib/components/ui/popover';
@@ -30,7 +29,6 @@
 	import * as api from '$lib/api';
 	import { blocked, prefs, refreshLanguage, setAutoplay, ui, toast, unblockArtist } from '$lib/player.svelte';
 	import { win } from '$lib/win.svelte';
-	import { lt } from '$lib/lt.svelte';
 	import AppearanceSettings from '$lib/components/AppearanceSettings.svelte';
 	import Changelog from '$lib/components/Changelog.svelte';
 	import DiscordSettings from '$lib/components/DiscordSettings.svelte';
@@ -50,6 +48,7 @@
 	import EnhancedLyricsSettings from '$lib/components/EnhancedLyricsSettings.svelte';
 	import LanguagePicker from '$lib/components/LanguagePicker.svelte';
 	import PhonesSettings from '$lib/components/metroqueue/PhonesSettings.svelte';
+	import MixSettings from '$lib/components/metroqueue/MixSettings.svelte';
 
 	type TabId =
 		| 'general'
@@ -215,18 +214,6 @@
 	// On unless turned off: loudness matching is what YTM does, and it's what most people want.
 	// Off gives the untouched master, limiter included (#298, #300).
 	const normalizeOn = $derived(settings.normalize_volume !== 'false');
-	// Off by default: experimental, and it runs a second decoder while tracks overlap.
-	const crossfadeOn = $derived(settings.crossfade === 'true');
-	// A room carries one track and one position, so an overlap cannot be synced: the backend
-	// suspends the fade for as long as we are in one (`AppState::apply_crossfade`). Say so here,
-	// or it reads as crossfade quietly breaking.
-	const crossfadeSuspended = $derived(lt.role !== 'none');
-	// Clamped like the player clamps it (`set_crossfade`), so a stored value from anywhere but this
-	// slider cannot show a number the audio will not use.
-	const crossfadeSecs = $derived.by(() => {
-		const secs = Number(settings.crossfade_secs ?? '5');
-		return Number.isFinite(secs) ? Math.min(10, Math.max(1, secs)) : 5;
-	});
 	const hideVideosOn = $derived(settings.hide_videos === 'true');
 	const preferWordsOn = $derived(settings.lyrics_prefer_words === 'true');
 	// Off until the setting is turned on: still experimental, so nobody gets video they didn't ask
@@ -286,16 +273,6 @@
 	async function setNormalize(on: boolean) {
 		settings.normalize_volume = on ? 'true' : 'false';
 		await api.setSetting('normalize_volume', settings.normalize_volume);
-	}
-
-	async function setCrossfade(on: boolean) {
-		settings.crossfade = on ? 'true' : 'false';
-		await api.setSetting('crossfade', settings.crossfade);
-	}
-
-	async function setCrossfadeSecs(secs: number) {
-		settings.crossfade_secs = String(secs);
-		await api.setSetting('crossfade_secs', settings.crossfade_secs);
 	}
 
 	// Also lands in `prefs`, which is where the player view reads it: the switch has to take effect
@@ -646,23 +623,6 @@
 									control: autoplaySwitch
 								})}
 								{@render row({
-									title: t('settings.playback.crossfade'),
-									badge: t('settings.themes.experimental'),
-									desc: crossfadeSuspended
-										? t('settings.playback.crossfade_lt_paused')
-										: t('settings.playback.crossfade_hint'),
-									control: crossfadeSwitch,
-									tall: true
-								})}
-								{#if crossfadeOn}
-									{@render row({
-										title: t('settings.playback.crossfade_duration'),
-										desc: t('settings.playback.crossfade_duration_hint'),
-										control: crossfadeSlider,
-										tall: true
-									})}
-								{/if}
-								{@render row({
 									title: t('settings.playback.prevent_duplicates'),
 									desc: t('settings.playback.prevent_duplicates_hint'),
 									control: dupSwitch,
@@ -682,6 +642,7 @@
 								})}
 							</div>
 						</section>
+						<MixSettings />
 						<section class={GROUP}>
 							<h3 class={LABEL}>{t('settings.sections.video')}</h3>
 							<div data-settings-card class={CARD}>
@@ -913,24 +874,6 @@
 	/>{/snippet}
 {#snippet autoplaySwitch()}<Switch checked={prefs.autoplay} onCheckedChange={setAutoplay} />{/snippet}
 
-{#snippet crossfadeSwitch()}<Switch checked={crossfadeOn} onCheckedChange={setCrossfade} />{/snippet}
-
-{#snippet crossfadeSlider()}
-	<div class="flex w-44 shrink-0 items-center gap-3">
-		<Slider
-			type="single"
-			aria-label={t('settings.playback.crossfade_duration')}
-			min={1}
-			max={10}
-			step={1}
-			value={crossfadeSecs}
-			onValueChange={setCrossfadeSecs}
-		/>
-		<span class="w-8 shrink-0 text-right font-mono text-xs text-muted-foreground">
-			{t('settings.playback.crossfade_seconds', { secs: crossfadeSecs })}
-		</span>
-	</div>
-{/snippet}
 {#snippet dupSwitch()}<Switch
 		checked={preventDuplicatesOn}
 		onCheckedChange={setPreventDuplicates}

@@ -22,6 +22,7 @@ mod matugen;
 mod media;
 mod metroqueue;
 mod mini;
+mod mix;
 mod mqsync;
 #[cfg(target_os = "linux")]
 mod nativevideo;

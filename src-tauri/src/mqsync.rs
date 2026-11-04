@@ -161,7 +161,6 @@ pub fn shared_setting_changed(app: &AppHandle, key: &str) {
 }
 
 /// The custom transitions (all of them, any order).
-#[allow(dead_code)] // the Mix phase's
 pub fn transitions(app: &AppHandle) -> Vec<Transition> {
     load(&db(app), TRANSITIONS_KEY)
 }
@@ -259,7 +258,8 @@ fn export_db(db: &Db, since_ms: i64, now: i64) -> SyncState {
     }
 }
 
-/// True when a setting the player reads (crossfade) changed.
+/// True when a setting the player reads (crossfade) changed. Every mapped setting counts; the Mix
+/// ones other than these two are read per transition, so reapplying is harmless.
 fn import_db(db: &Db, state: &SyncState, now: i64) -> anyhow::Result<bool> {
     let changed = {
         let _guard = LOCK.lock().unwrap();
@@ -421,8 +421,14 @@ const WHITELIST: [(&str, Valid); 11] = [
 /// Whitelisted names this app has a setting for, and that setting's key. The rest are only kept
 /// and sent back. shortcut: the accent colour and pure black live in the UI's localStorage, out
 /// of reach here; map them once the theme moves to the backend.
-const MAPPED: [(&str, &str); 2] =
-    [("crossfadeEnabled", "crossfade"), ("crossfadeDurationFloat", "crossfade_secs")];
+const MAPPED: [(&str, &str); 6] = [
+    ("crossfadeEnabled", "crossfade"),
+    ("mixMode", "mix_mode"),
+    ("mixTransitionStyle", "mix_style"),
+    ("crossfadeDurationFloat", "crossfade_secs"),
+    ("crossfadeOnSkip", "crossfade_on_skip"),
+    ("crossfadeGapless", "crossfade_gapless"),
+];
 
 fn one_of(v: &Value, names: &[&str]) -> bool {
     v.as_str().is_some_and(|s| names.contains(&s))
@@ -433,7 +439,10 @@ fn read(db: &Db, name: &str) -> Option<Value> {
     let (_, key) = MAPPED.iter().find(|(n, _)| *n == name)?;
     let raw = db.get_setting(key);
     Some(match name {
-        "crossfadeEnabled" => raw.map_or(Value::Null, |v| Value::Bool(v == "true")),
+        "crossfadeEnabled" | "crossfadeOnSkip" | "crossfadeGapless" => {
+            raw.map_or(Value::Null, |v| Value::Bool(v == "true"))
+        }
+        "mixMode" | "mixTransitionStyle" => raw.map_or(Value::Null, Value::String),
         _ => raw.and_then(|v| v.parse::<f64>().ok()).map_or(Value::Null, |v| json!(v)),
     })
 }
@@ -443,6 +452,7 @@ fn write(db: &Db, name: &str, value: &Value) {
     match value {
         Value::Null => db.delete_setting(key),
         Value::Bool(b) => db.set_setting(key, &b.to_string()),
+        Value::String(s) => db.set_setting(key, s),
         v => db.set_setting(key, &v.to_string()),
     }
 }
@@ -865,6 +875,31 @@ mod tests {
         assert_eq!(export_db(&d, 0, 90).settings["crossfadeEnabled"].updated_at, 90);
         import_db(&d, &phone, 95).unwrap();
         assert_eq!(d.get_setting("crossfade").as_deref(), Some("false"));
+    }
+
+    #[test]
+    fn mix_settings_map_onto_their_own_keys() {
+        let d = db();
+        let phone = state(json!({"settings": {
+            "mixMode": {"value": "SMART", "updatedAt": 40},
+            "mixTransitionStyle": {"value": "ECHO", "updatedAt": 40},
+            "crossfadeOnSkip": {"value": false, "updatedAt": 40},
+            "crossfadeGapless": {"value": true, "updatedAt": 40}
+        }}));
+        assert!(import_db(&d, &phone, 50).unwrap());
+        assert_eq!(d.get_setting("mix_mode").as_deref(), Some("SMART"));
+        assert_eq!(d.get_setting("mix_style").as_deref(), Some("ECHO"));
+        assert_eq!(d.get_setting("crossfade_on_skip").as_deref(), Some("false"));
+        assert_eq!(d.get_setting("crossfade_gapless").as_deref(), Some("true"));
+        let out = export_db(&d, 0, 60);
+        assert_eq!(out.settings["mixMode"], Setting { value: json!("SMART"), updated_at: 40 });
+        assert_eq!(out.settings["crossfadeOnSkip"].value, json!(false));
+        // Changed here: stamped with this machine's time.
+        d.set_setting("mix_style", "RISE");
+        assert_eq!(
+            export_db(&d, 0, 70).settings["mixTransitionStyle"],
+            Setting { value: json!("RISE"), updated_at: 70 }
+        );
     }
 
     #[test]

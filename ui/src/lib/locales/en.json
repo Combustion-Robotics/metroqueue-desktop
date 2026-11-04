@@ -526,7 +526,8 @@
 			"discord_buttons": "Buttons",
 			"colors": "Colors",
 			"interface": "Interface",
-			"metroqueue": "MetroQueue phones"
+			"metroqueue": "MetroQueue phones",
+			"mix": "Mix"
 		},
 		"general": {
 			"language": "Interface language",
@@ -650,8 +651,6 @@
 			"quality_high": "High",
 			"autoplay": "Autoplay similar songs",
 			"autoplay_hint": "Continuously play recommended tracks when the queue finishes.",
-			"crossfade": "Crossfade",
-			"crossfade_hint": "Fade the end of each track into the start of the next one. Runs a second audio decoder while tracks overlap, so it uses a little more memory.",
 			"crossfade_lt_paused": "Paused while you are in a Listen Together room: an overlap of two tracks cannot be kept in sync with everyone else.",
 			"crossfade_duration": "Crossfade duration",
 			"crossfade_duration_hint": "How long the overlap lasts. Short tracks fade for less, so a fade never starts before the one before it has finished.",
@@ -915,6 +914,32 @@
 			"forget_title": "Forget {name}?",
 			"forget_desc": "It will need a new pairing code to connect to this computer again.",
 			"forget_confirm": "Forget"
+		},
+		"mix": {
+			"mode": "Mode",
+			"mode_off": "Off",
+			"mode_off_desc": "Songs play one after another.",
+			"mode_crossfade": "Crossfade",
+			"mode_crossfade_desc": "Fades out the current song as the next one fades in. Runs a second audio decoder while songs overlap.",
+			"mode_smart": "Smart mix",
+			"mode_smart_desc": "Picks where and how to blend each pair of songs from their tempo, key and structure. Analyses the start and end of each song on this computer.",
+			"style": "Transition style",
+			"style_auto": "Auto",
+			"style_auto_desc": "Smart mix picks a style for each transition; with Crossfade, a fade.",
+			"style_fade": "Fade",
+			"style_fade_desc": "Smooth volume crossfade.",
+			"style_filter": "Filter",
+			"style_filter_desc": "The current song thins out as the next one opens up.",
+			"style_echo": "Echo",
+			"style_echo_desc": "The current song echoes out under the next one.",
+			"style_rise": "Rise",
+			"style_rise_desc": "The current song builds up, then the next one drops in.",
+			"style_cut": "Cut",
+			"style_cut_desc": "No overlap, switches where the song ends.",
+			"on_skip": "Crossfade on manual skip",
+			"on_skip_desc": "Quickly blend into the next song when you skip.",
+			"gapless": "Disable for gapless albums",
+			"gapless_desc": "Skip the crossfade between songs of the same album, which are made to play without gaps."
 		}
 	},
 	"dialogs": {
