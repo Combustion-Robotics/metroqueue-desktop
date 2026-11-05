@@ -27,7 +27,7 @@
 		SpotifyIcon,
 		Search01Icon
 	} from '@hugeicons/core-free-icons';
-	import { Button } from '$lib/components/ui/button';
+	import { Button, buttonVariants } from '$lib/components/ui/button';
 	import * as RadioGroup from '$lib/components/ui/radio-group';
 	import * as AlertDialog from '$lib/components/ui/alert-dialog';
 	import { Skeleton } from '$lib/components/ui/skeleton';
@@ -1202,21 +1202,21 @@
 				</div>
 				{#if isOnRepeat}
 					<div
-						class="relative flex h-40 w-40 items-center justify-center rounded-xl bg-primary/10 text-primary shadow-lg"
+						class="relative flex h-40 w-40 items-center justify-center rounded-xl bg-primary-container text-on-primary-container"
 					>
 						<HugeiconsIcon icon={ListRestartIcon} class="h-20 w-20" />
 					</div>
 				{:else if art}
-					<img src={art} alt="" class="relative h-40 w-40 rounded-xl object-cover shadow-lg" />
+					<img src={art} alt="" class="relative h-40 w-40 rounded-xl object-cover" />
 				{:else}
 					<div class="relative h-40 w-40 rounded-xl bg-muted"></div>
 				{/if}
 				<div class="relative min-w-0 flex-1">
-					<div class="flex items-center gap-2 text-xs font-medium uppercase text-muted-foreground">
+					<div class="flex items-center gap-2 text-label-lg text-on-surface-variant">
 						{t('common.playlist_singular')}
 						{#if isLocalList}
 							<span
-								class="flex items-center gap-1 rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-primary"
+								class="flex items-center gap-1 rounded-sm bg-secondary-container px-2 py-0.5 text-label-sm text-on-secondary-container"
 								title={t('library.on_this_device_tooltip')}
 							>
 								<HugeiconsIcon icon={ComputerIcon} class="h-3 w-3" />
@@ -1225,13 +1225,13 @@
 						{/if}
 						{#if pl.collaborative}
 							<span
-								class="rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-primary"
+								class="rounded-sm bg-secondary-container px-2 py-0.5 text-label-sm text-on-secondary-container"
 								title={t('library.collab_tooltip')}>{t('library.collab')}</span
 							>
 						{/if}
 						{#if spotifyUrl && (pl.owned || isLocalList)}
 							<button
-								class="flex cursor-pointer items-center gap-1.5 rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-primary transition-colors hover:bg-primary/25 disabled:cursor-default disabled:opacity-60"
+								class="flex cursor-pointer items-center gap-1.5 rounded-sm bg-secondary-container px-2 py-0.5 text-label-sm text-on-secondary-container state-layer disabled:cursor-default disabled:opacity-60"
 								title={t('import.update_tooltip')}
 								disabled={updatingFromSpotify}
 								onclick={() => updateFromSpotify(id)}
@@ -1242,7 +1242,7 @@
 							</button>
 						{/if}
 					</div>
-					<h1 class="mt-1 font-heading text-4xl font-bold tracking-tight drop-shadow-lg">
+					<h1 class="mt-1 text-display-sm font-bold">
 						{pl.title ?? t('common.playlist_singular')}
 					</h1>
 					{#if subtitle}<p class="mt-2 text-sm text-muted-foreground">{subtitle}</p>{/if}
@@ -1254,7 +1254,7 @@
 							</p>
 							{#if longDescription}
 								<button
-									class="mt-1 cursor-pointer text-xs font-semibold uppercase text-muted-foreground hover:text-foreground"
+									class="mt-1 cursor-pointer text-label-lg text-primary hover:underline"
 									onclick={() => (expanded = !expanded)}
 								>
 									{expanded ? t('common.less') : t('common.more')}
@@ -1265,25 +1265,26 @@
 					<div class="mt-4 flex items-center justify-between gap-2">
 						<div class="flex items-center gap-2">
 							<Button
-								class="gap-2"
+								size="lg"
 								onclick={() => playAll(null)}
 								disabled={!pl.items.length || preparing || resorting}
 							>
-								<HugeiconsIcon icon={PlayIcon} class="h-4 w-4" />
+								<HugeiconsIcon icon={PlayIcon} />
 								{preparing || resorting ? t('common.sorting') : t('player.play')}
-							</Button>
-							<Button
-								variant="ghost"
-								size="icon"
-								aria-label={t('a11y.playlist_options')}
-								onclick={openMenu}
-							>
-								<HugeiconsIcon icon={MoreVerticalIcon} class="h-5 w-5 text-muted-foreground" />
 							</Button>
 							<TrackSelectButton
 								{selection}
-								class="-ml-2 flex h-9 w-9 cursor-pointer items-center justify-center rounded-full transition hover:bg-muted hover:text-foreground"
+								class={buttonVariants({ variant: 'outline', size: 'icon-lg' })}
 							/>
+							<Button
+								variant="outline"
+								size="icon-lg"
+								class="text-on-surface-variant"
+								aria-label={t('a11y.playlist_options')}
+								onclick={openMenu}
+							>
+								<HugeiconsIcon icon={MoreVerticalIcon} />
+							</Button>
 						</div>
 						<!-- Pushed to the far end of the header, away from the play controls. -->
 						<div class="flex items-center">

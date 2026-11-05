@@ -30,6 +30,7 @@
     import ArtistLine from "$lib/components/ArtistLine.svelte";
     import ExplicitIcon from "$lib/components/ExplicitIcon.svelte";
     import { Skeleton } from "$lib/components/ui/skeleton";
+    import { Button, buttonVariants } from "$lib/components/ui/button";
     import * as api from "$lib/api";
     import type { AlbumPage, BrowseItem } from "$lib/api";
     import {
@@ -274,7 +275,7 @@
                         src={thumb(album.thumbnail, 400)}
                         alt=""
                         style="width:7rem;height:7rem"
-                        class="shrink-0 rounded-xl object-cover shadow-2xl"
+                        class="shrink-0 rounded-xl object-cover"
                     />
                 {:else}
                     <div
@@ -284,12 +285,12 @@
                 {/if}
                 <div class="min-w-0">
                     <div
-                        class="text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+                        class="text-label-lg text-on-surface-variant"
                     >
                         {album.subtitle ?? "Album"}
                     </div>
                     <h1
-                        class="mt-1 font-heading text-4xl font-bold tracking-tight drop-shadow"
+                        class="mt-1 text-display-sm font-bold"
                     >
                         {album.title ?? "Album"}
                     </h1>
@@ -334,7 +335,7 @@
                         {album.description}
                     </p>
                     <button
-                        class="mt-1 cursor-pointer text-xs font-semibold uppercase text-muted-foreground hover:text-foreground"
+                        class="mt-1 cursor-pointer text-label-lg text-primary hover:underline"
                         onclick={() => (expanded = !expanded)}
                     >
                         {expanded ? t("common.less") : t("common.more")}
@@ -344,27 +345,19 @@
 
             <!-- Controls -->
             <div class="relative flex items-center gap-3">
-                <button
-                    class="flex cursor-pointer items-center gap-2 rounded-full text-foreground bg-primary px-6 py-2.5 text-sm font-semibold transition hover:opacity-90 disabled:opacity-50"
-                    onclick={() => playAll(null)}
-                    disabled={!album.items.length}
-                >
-                    <HugeiconsIcon icon={PlayIcon} class="h-4 w-4" /> {t("player.play")}
-                </button>
-                <button
-                    class="flex cursor-pointer items-center gap-2 rounded-full border px-5 py-2.5 text-sm font-semibold transition hover:bg-accent/10 disabled:opacity-50"
-                    onclick={shuffle}
-                    disabled={!album.items.length}
-                >
-                    <HugeiconsIcon icon={ShuffleIcon} class="h-4 w-4" /> {t("common.shuffle")}
-                </button>
+                <Button size="lg" onclick={() => playAll(null)} disabled={!album.items.length}>
+                    <HugeiconsIcon icon={PlayIcon} /> {t("player.play")}
+                </Button>
+                <Button variant="tonal" size="lg" onclick={shuffle} disabled={!album.items.length}>
+                    <HugeiconsIcon icon={ShuffleIcon} /> {t("common.shuffle")}
+                </Button>
                 <!-- Local albums are already in the Local tab; everything else is savable, signed
                      in or not. -->
                 {#if !isLocal}
-                    <button
-                        class="flex cursor-pointer items-center gap-2 rounded-full border px-5 py-2.5 text-sm font-semibold transition hover:bg-accent/10 disabled:opacity-50"
-                        class:border-primary={inLibrary}
-                        class:text-primary={inLibrary}
+                    <Button
+                        variant="outline"
+                        size="lg"
+                        class={inLibrary ? "border-primary text-primary" : ""}
                         onclick={toggleLibrary}
                         disabled={savingLibrary}
                     >
@@ -373,22 +366,23 @@
                             icon={BookmarkAdd02Icon}
                             altIcon={BookmarkCheck02Icon}
                             showAlt={inLibrary}
-                            class="h-4 w-4"
                         />
                         {inLibrary ? t("library.in_library") : t("library.save_to_library")}
-                    </button>
+                    </Button>
                 {/if}
                 <TrackSelectButton
                     {selection}
-                    class="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border transition hover:bg-accent/10 hover:text-foreground"
+                    class={buttonVariants({ variant: "outline", size: "icon-lg" })}
                 />
-                <button
-                    class="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border text-muted-foreground transition hover:bg-accent/10 hover:text-foreground"
+                <Button
+                    variant="outline"
+                    size="icon-lg"
+                    class="text-on-surface-variant"
                     onclick={openMenu}
                     aria-label={t("a11y.more_options")}
                 >
-                    <HugeiconsIcon icon={MoreVerticalIcon} class="h-5 w-5" />
-                </button>
+                    <HugeiconsIcon icon={MoreVerticalIcon} />
+                </Button>
 
                 {#if menuOpen}
                     <!-- Moved to <body>: the header clips its overflow, and a menu opened from the

@@ -63,7 +63,7 @@
      that never left the mark. No `title`: the card is the tooltip, and a native one on top of it
      covered half of it. -->
 <button
-	class="cursor-pointer rounded-md p-1.5 text-primary transition hover:bg-primary/15"
+	class="state-layer cursor-pointer rounded-full p-1.5 text-primary"
 	aria-label={label}
 	onmouseenter={show}
 	onmouseleave={hide}
@@ -91,7 +91,7 @@
 	<div class="relative shrink-0 {single ? 'h-14 w-14' : 'h-12 w-[4.5rem]'}">
 		{#each shown as pl, i (pl.id)}
 			<div
-				class="sleeve absolute overflow-hidden {single ? 'inset-0' : 'left-4 top-1 h-10 w-10'} rounded-md bg-muted shadow-md ring-2 ring-popover"
+				class="sleeve absolute overflow-hidden {single ? 'inset-0' : 'left-4 top-1 h-10 w-10'} rounded-md bg-muted ring-2 ring-surface-container"
 				class:lifted={lifted === i}
 				style="--x:{fan[i][0]}px;--r:{fan[i][1]}deg;--i:{i};z-index:{lifted === i ? 9 : 3 - i}"
 			>
@@ -103,7 +103,7 @@
 		{/each}
 	</div>
 	<div class="relative min-w-0 flex-1">
-		<p class="text-[10px] font-semibold uppercase tracking-[0.14em] text-primary">
+		<p class="text-label-md text-primary">
 			{t('library.saved_in')}
 		</p>
 		<p class="truncate text-sm font-semibold">
@@ -117,7 +117,7 @@
 
 {#if open}
 	<div
-		class="fixed z-50 w-64 animate-in overflow-hidden rounded-xl border bg-popover text-popover-foreground shadow-xl duration-150 fade-in-0 zoom-in-95"
+		class="fixed z-50 w-64 animate-in overflow-hidden rounded-lg bg-surface-container text-on-surface shadow-md duration-150 fade-in-0 zoom-in-95"
 		style={anchor.style}
 		{@attach fitMenu(anchor)}
 		onmouseenter={keep}
@@ -146,7 +146,7 @@
 				{#each shown as pl, i (pl.id)}
 					<a
 						href={hrefFor(pl)}
-						class="group/pl flex items-center gap-2 rounded-lg px-2 py-1.5 outline-none hover:bg-accent/10 focus-visible:bg-accent/10"
+						class="group/pl flex items-center gap-2 rounded-md px-2 py-1.5 outline-none state-layer"
 						onclick={() => (open = false)}
 						onmouseenter={() => (lifted = i)}
 						onmouseleave={() => (lifted = -1)}

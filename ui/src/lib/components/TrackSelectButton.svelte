@@ -9,7 +9,7 @@
 	let {
 		selection,
 		class: className =
-			'flex h-9 w-9 cursor-pointer items-center justify-center rounded-full transition hover:bg-muted hover:text-foreground'
+			'state-layer flex h-9 w-9 cursor-pointer items-center justify-center rounded-full'
 	}: { selection: TrackSelection; class?: string } = $props();
 </script>
 

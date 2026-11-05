@@ -190,12 +190,12 @@
 	<div class="{hidden ? '' : 'mb-2'} flex items-center justify-between gap-4 px-2">
 		<div class="flex min-w-0 items-center gap-3">
 			<span
-				class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary"
+				class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-secondary-container text-on-secondary-container"
 			>
 				<HugeiconsIcon icon={LayerAddIcon} strokeWidth={2} class="h-4 w-4" />
 			</span>
 			<div class="min-w-0">
-				<h2 class="truncate font-heading text-xl font-bold tracking-tight">
+				<h2 class="truncate text-title-lg font-bold">
 					{t('library.suggestions')}
 				</h2>
 				<p class="truncate text-xs text-muted-foreground">{t('library.suggestions_hint')}</p>
@@ -273,9 +273,9 @@
 								<!-- Always shown, unlike the row's other controls: adding is what the shelf
 								     is for. No transition, like everything else on a row (UI-PERFORMANCE). -->
 								<button
-									class="ml-1 flex h-8 shrink-0 cursor-pointer items-center gap-1.5 rounded-full border px-3 text-xs font-medium {added
-										? 'border-primary bg-primary text-primary-foreground'
-										: 'hover:border-primary hover:bg-primary hover:text-primary-foreground'}"
+									class="ml-1 flex h-8 shrink-0 cursor-pointer items-center gap-1.5 rounded-full border px-3 text-label-lg {added
+										? 'border-primary bg-primary text-on-primary'
+										: 'state-layer border-outline-variant text-on-surface-variant'}"
 									aria-label={t('library.suggestion_add', { title: song.title })}
 									aria-disabled={added}
 									onclick={(e) => {
@@ -318,11 +318,11 @@
 {#if inline}
 	<div class="px-4 pb-6">
 		{#if hidden}
-			<section class="mt-8 rounded-2xl bg-muted/40 p-2 py-3">
+			<section class="mt-8 rounded-xl bg-surface-container-low p-2 py-3">
 				{@render header(false)}
 			</section>
 		{:else if live}
-			<section class="mt-8 rounded-2xl bg-muted/40 p-2 pt-4" aria-busy={loading} {@attach watchShelf}>
+			<section class="mt-8 rounded-xl bg-surface-container-low p-2 pt-4" aria-busy={loading} {@attach watchShelf}>
 				{@render header(false)}
 				{@render body(false)}
 			</section>
@@ -336,7 +336,7 @@
      until the window was resized. Plain fade and one scale on a single element: nothing repeats. -->
 {#if dockable && open}
 	<div
-		class="fixed right-6 z-10 flex max-h-[min(36rem,calc(100vh-12rem))] w-[min(30rem,calc(100vw-3rem))] origin-bottom-right {playback.now ? 'bottom-24' : 'bottom-6'} flex-col rounded-2xl border bg-card p-2 pt-3 shadow-xl outline-none"
+		class="fixed right-6 z-10 flex max-h-[min(36rem,calc(100vh-12rem))] w-[min(30rem,calc(100vw-3rem))] origin-bottom-right {playback.now ? 'bottom-24' : 'bottom-6'} flex-col rounded-xl bg-surface-container-high p-2 pt-3 shadow-lg outline-none"
 		role="dialog"
 		aria-label={t('library.suggestions')}
 		aria-busy={loading}
@@ -356,7 +356,7 @@
 	<!-- The shelf's own badge until the batch is in, then the next picks' covers: it reads as the
 	     same shelf, pocketed. -->
 	<button
-		class="fixed right-6 z-10 flex h-11 {playback.now ? 'bottom-24' : 'bottom-6'} cursor-pointer items-center gap-2.5 rounded-full border bg-card pl-1.5 pr-4 text-sm font-medium shadow-lg transition-colors hover:bg-muted"
+		class="fixed right-6 z-10 flex h-11 {playback.now ? 'bottom-24' : 'bottom-6'} state-layer cursor-pointer items-center gap-2.5 rounded-full bg-surface-container-high pl-1.5 pr-4 text-label-lg text-on-surface shadow-lg"
 		aria-expanded="false"
 		onclick={() => (open = true)}
 		transition:fade={{ duration: ms(150) }}
@@ -369,14 +369,14 @@
 					<img
 						src={thumb(song.thumbnail, 96)}
 						alt=""
-						class="h-8 w-8 rounded-full bg-muted object-cover ring-2 ring-card"
+						class="h-8 w-8 rounded-full bg-muted object-cover ring-2 ring-surface-container-high"
 						in:scale|global={{ start: 0.6, duration: ms(220), delay: ms(i * 50) }}
 					/>
 				{/each}
 			</span>
 		{:else}
 			<span
-				class="flex h-8 w-8 items-center justify-center rounded-full bg-primary/15 text-primary"
+				class="flex h-8 w-8 items-center justify-center rounded-full bg-secondary-container text-on-secondary-container"
 			>
 				<HugeiconsIcon icon={LayerAddIcon} strokeWidth={2} class="h-4 w-4" />
 			</span>

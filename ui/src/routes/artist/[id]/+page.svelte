@@ -12,8 +12,7 @@
 		Share08Icon,
 		UserBlock01Icon,
 		BookmarkAdd02Icon,
-		BookmarkCheck02Icon,
-		ArrowRight01Icon
+		BookmarkCheck02Icon
 	} from '@hugeicons/core-free-icons';
 	import MediaCardSkeleton from '$lib/components/MediaCardSkeleton.svelte';
 	import TrackRow from '$lib/components/TrackRow.svelte';
@@ -21,6 +20,8 @@
 	import ErrorState from '$lib/components/ErrorState.svelte';
 	import Shelf from '$lib/components/Shelf.svelte';
 	import { Skeleton } from '$lib/components/ui/skeleton';
+	import { Button } from '$lib/components/ui/button';
+	import SectionHeading from '$lib/components/SectionHeading.svelte';
 	import * as api from '$lib/api';
 	import type { ArtistPage, BrowseItem, PlaylistPage } from '$lib/api';
 	import {
@@ -221,9 +222,9 @@
 			class="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-background/10"
 		></div>
 		<div class="relative max-w-3xl p-8">
-			<h1 class="font-heading text-5xl font-bold tracking-tight drop-shadow-lg">{artist.name}</h1>
+			<h1 class="text-display-md font-bold">{artist.name}</h1>
 			{#if artist.subscribers || artist.monthlyListeners}
-				<p class="mt-2 text-sm text-muted-foreground">
+				<p class="mt-2 text-body-md text-on-surface-variant">
 					{#if artist.subscribers}{artist.subscribers}{/if}
 					{#if artist.subscribers && artist.monthlyListeners}<br />{/if}
 					{#if artist.monthlyListeners}{artist.monthlyListeners}{/if}
@@ -234,46 +235,39 @@
 					{artist.description}
 				</p>
 				<button
-					class="mt-1 text-xs font-semibold uppercase text-muted-foreground hover:text-foreground"
+					class="mt-1 cursor-pointer text-label-lg text-primary hover:underline"
 					onclick={() => (expanded = !expanded)}
 				>
 					{expanded ? t('common.less') : t('common.more')}
 				</button>
 			{/if}
 			<div class="mt-5 flex items-center gap-3">
-				<button
-					class="flex items-center gap-2 rounded-full bg-foreground px-5 py-2.5 text-sm font-semibold text-background transition hover:opacity-90 disabled:opacity-50"
-					onclick={shuffle}
-					disabled={!artist.topSongs.length || shuffleBusy}
-				>
-					<HugeiconsIcon icon={ShuffleIcon} class="h-4 w-4" /> {t('common.shuffle')}
-				</button>
+				<Button size="lg" onclick={shuffle} disabled={!artist.topSongs.length || shuffleBusy}>
+					<HugeiconsIcon icon={ShuffleIcon} /> {t('common.shuffle')}
+				</Button>
 				<!-- The deep counterpart to Shuffle above: that one is the finite top-songs playlist,
 				     this one asks YouTube for the artist's own endless mix. -->
-				<button
-					class="flex cursor-pointer items-center gap-2 rounded-full border px-5 py-2.5 text-sm font-semibold transition hover:bg-accent/10"
-					onclick={() => startRadio('artist', id, artist?.name)}
-				>
-					<HugeiconsIcon icon={Radio02Icon} class="h-4 w-4" /> {t('common.radio')}
-				</button>
+				<Button variant="tonal" size="lg" onclick={() => startRadio('artist', id, artist?.name)}>
+					<HugeiconsIcon icon={Radio02Icon} /> {t('common.radio')}
+				</Button>
 				<!-- Subscribing is a YouTube write action. Signed out, the same slot saves the artist to
 				     the local library instead of offering a button that can only fail. -->
 				{#if auth.account?.signedIn}
-					<button
-						class="flex items-center gap-2 rounded-full border px-5 py-2.5 text-sm font-semibold transition hover:bg-accent/10 disabled:opacity-60 {subscribed
-							? 'border-primary text-primary'
-							: ''}"
+					<Button
+						variant="outline"
+						size="lg"
+						class={subscribed ? 'border-primary text-primary' : ''}
 						onclick={toggleSub}
 						disabled={subBusy}
 					>
-						<HugeiconsIcon icon={Add01Icon} altIcon={Tick02Icon} showAlt={subscribed} class="h-4 w-4" />
+						<HugeiconsIcon icon={Add01Icon} altIcon={Tick02Icon} showAlt={subscribed} />
 						{subscribed ? t('artist.subscribed') : t('artist.subscribe')}
-					</button>
+					</Button>
 				{:else}
-					<button
-						class="flex cursor-pointer items-center gap-2 rounded-full border px-5 py-2.5 text-sm font-semibold transition hover:bg-accent/10 {savedHere
-							? 'border-primary text-primary'
-							: ''}"
+					<Button
+						variant="outline"
+						size="lg"
+						class={savedHere ? 'border-primary text-primary' : ''}
 						onclick={() =>
 							toast.success(
 								toggleSaved(asItem()) ? t('library.in_library') : t('common.remove')
@@ -283,18 +277,19 @@
 							icon={BookmarkAdd02Icon}
 							altIcon={BookmarkCheck02Icon}
 							showAlt={savedHere}
-							class="h-4 w-4"
 						/>
 						{savedHere ? t('library.in_library') : t('library.save_to_library')}
-					</button>
+					</Button>
 				{/if}
-				<button
-					class="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border text-muted-foreground transition hover:bg-accent/10 hover:text-foreground"
+				<Button
+					variant="outline"
+					size="icon-lg"
+					class="text-on-surface-variant"
 					onclick={openMenu}
 					aria-label={t('common.more')}
 				>
-					<HugeiconsIcon icon={MoreVerticalIcon} class="h-5 w-5" />
-				</button>
+					<HugeiconsIcon icon={MoreVerticalIcon} />
+				</Button>
 			</div>
 		</div>
 	</div>
@@ -302,27 +297,11 @@
 	<div class="content-in flex flex-col gap-8 p-6">
 		{#if artist.topSongs.length}
 			<section>
-				<!-- Same header shape as Shelf: title and "See all" both navigate. -->
-				<div class="mb-3 flex items-baseline justify-between gap-3">
-					{#if artist.topSongsId}
-						<button
-							class="min-w-0 cursor-pointer text-left hover:underline"
-							onclick={() => goto(`/playlist/${artist!.topSongsId}`)}
-							title={t('common.see_all')}
-						>
-							<h2 class="truncate font-heading text-xl font-bold">{t('artist.top_songs')}</h2>
-						</button>
-						<button
-							class="flex shrink-0 cursor-pointer items-center gap-0.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
-							onclick={() => goto(`/playlist/${artist!.topSongsId}`)}
-						>
-							{t('common.see_all')}
-							<HugeiconsIcon icon={ArrowRight01Icon} class="h-3.5 w-3.5" />
-						</button>
-					{:else}
-						<h2 class="truncate font-heading text-xl font-bold">{t('artist.top_songs')}</h2>
-					{/if}
-				</div>
+				<!-- Same header as Shelf: title and "See all" both navigate. -->
+				<SectionHeading
+					title={t('artist.top_songs')}
+					onMore={artist.topSongsId ? () => goto(`/playlist/${artist!.topSongsId}`) : undefined}
+				/>
 				{#each artist.topSongs as song, i (song.video_id + i)}
 					<TrackRow
 						{song}

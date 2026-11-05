@@ -34,19 +34,19 @@
 </script>
 
 <div
-	class="flex items-center gap-2 rounded-full border bg-background/80 py-1.5 pl-3 pr-2 shadow-sm backdrop-blur focus-within:border-accent"
+	class="flex h-10 items-center gap-2 rounded-full bg-surface-container-high pl-3.5 pr-3 focus-within:ring-2 focus-within:ring-primary"
 >
 	<HugeiconsIcon
 		icon={SearchList01Icon}
 		strokeWidth={2.5}
-		class="h-4 w-4 shrink-0 text-muted-foreground"
+		class="h-4 w-4 shrink-0 text-on-surface-variant"
 	/>
 	<input
 		bind:value
 		{placeholder}
 		aria-label={placeholder}
 		{onfocus}
-		class="w-48 min-w-0 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+		class="w-48 min-w-0 bg-transparent text-body-md text-on-surface outline-none placeholder:text-on-surface-variant"
 		onkeydown={(e) => e.key === 'Escape' && (value = '')}
 	/>
 	<!-- Holds its 1rem either way, so typing doesn't resize the box. -->
