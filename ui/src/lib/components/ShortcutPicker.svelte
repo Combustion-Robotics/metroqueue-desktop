@@ -35,12 +35,12 @@
 >
 	<div
 		transition:scale={{ duration: 180, start: 0.96, easing: cubicOut }}
-		class="flex max-h-[32rem] w-full max-w-sm flex-col rounded-xl border bg-card p-4 shadow-xl"
+		class="flex max-h-[32rem] w-full max-w-sm flex-col rounded-xl bg-surface-container-high p-5 shadow-lg"
 	>
 		<div class="mb-3 flex items-center justify-between">
-			<h2 class="font-heading text-base font-semibold">{t('home.add_shortcut')}</h2>
+			<h2 class="text-title-lg">{t('home.add_shortcut')}</h2>
 			<button
-				class="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+				class="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full text-muted-foreground state-layer hover:text-foreground"
 				onclick={onclose}
 				aria-label={t('a11y.close')}
 			>
@@ -52,7 +52,7 @@
 			bind:value={filter}
 			autofocus
 			placeholder={t('common.filter_library')}
-			class="mb-2 w-full rounded-lg border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+			class="mb-2 h-10 w-full rounded-full bg-surface-container-highest px-4 text-body-md outline-none placeholder:text-on-surface-variant focus-visible:ring-2 focus-visible:ring-primary"
 		/>
 		{#if library.loading && !library.items.length}
 			<p class="p-2 text-sm text-muted-foreground">{t('common.loading')}</p>
@@ -61,7 +61,7 @@
 				{#each matches as item (item.id)}
 					{@const on = already(item.id)}
 					<button
-						class="flex w-full cursor-pointer items-center gap-3 rounded-lg p-2 text-left hover:bg-accent/10 disabled:cursor-default disabled:opacity-60"
+						class="flex w-full cursor-pointer items-center gap-3 rounded-lg p-2 text-left state-layer disabled:cursor-default disabled:opacity-60"
 						disabled={on}
 						onclick={() => addPick(item)}
 					>

@@ -307,7 +307,7 @@
 
 		{#if view === 'source'}
 			<div class="flex flex-col gap-3 {dragging ? 'rounded-2xl ring-2 ring-primary ring-offset-4 ring-offset-background' : ''}">
-				<form class="flex flex-col gap-2 rounded-2xl border p-4" onsubmit={submitLink}>
+				<form class="flex flex-col gap-2 rounded-xl bg-surface-container p-4" onsubmit={submitLink}>
 					<div class="flex items-center gap-2 text-sm font-medium">
 						<HugeiconsIcon icon={Link01Icon} class="h-4 w-4 text-muted-foreground" />
 						{t('import.link_title')}
@@ -320,7 +320,7 @@
 						</Button>
 					</div>
 				</form>
-				<div class="flex flex-col gap-2 rounded-2xl border p-4">
+				<div class="flex flex-col gap-2 rounded-xl bg-surface-container p-4">
 					<div class="flex items-center gap-2 text-sm font-medium">
 						<HugeiconsIcon icon={FileImportIcon} class="h-4 w-4 text-muted-foreground" />
 						{t('import.data_title')}
@@ -348,7 +348,7 @@
 			{@const p = imp.preview}
 			{#if p.lists.length === 1}
 				{@const l = p.lists[0]}
-				<div class="flex items-center gap-4 rounded-2xl border p-4">
+				<div class="flex items-center gap-4 rounded-xl bg-surface-container p-4">
 					{@render art(l.cover, 'h-20 w-20')}
 					<div class="min-w-0">
 						<div class="truncate text-lg font-semibold">{listName(l)}</div>
@@ -374,7 +374,7 @@
 				</div>
 				<div class="-mx-1 max-h-[45vh] overflow-y-auto px-1">
 					{#each p.lists as l, i (i)}
-						<label class="flex cursor-pointer items-center gap-3 rounded-xl px-2 py-2 transition-colors hover:bg-accent/10">
+						<label class="flex cursor-pointer items-center gap-3 rounded-xl px-2 py-2 state-layer">
 							<Checkbox checked={picked[i]} onCheckedChange={(v) => (picked[i] = !!v)} />
 							<div class="min-w-0 flex-1">
 								<div class="truncate text-sm font-medium">{listName(l)}</div>
@@ -404,7 +404,7 @@
 					<span class="flex items-center gap-1">{@render tierIcon('check')}{t('import.to_check', { count: job.check })}</span>
 					<span class="flex items-center gap-1">{@render tierIcon('missing')}{t('import.not_found', { count: job.missing })}</span>
 				</div>
-				<div class="flex flex-col gap-1 rounded-2xl border p-2">
+				<div class="flex flex-col gap-1 rounded-xl bg-surface-container p-2">
 					{#each job.recent as r, i (i)}
 						<div class="flex items-center gap-3 rounded-lg px-2 py-1.5">
 							{@render art(r.thumbnail, 'h-8 w-8')}
@@ -442,7 +442,7 @@
 					<Tabs.Trigger value="matched">{t('import.tab_matched', { count: job.matched })}</Tabs.Trigger>
 				</Tabs.List>
 			</Tabs.Root>
-			<div class="h-[38vh] overflow-y-auto rounded-2xl border" {@attach sc.attach}>
+			<div class="h-[38vh] overflow-y-auto rounded-xl bg-surface-container" {@attach sc.attach}>
 				{#if !rows.length}
 					<p class="p-4 text-sm text-muted-foreground">{t('import.nothing_here')}</p>
 				{/if}
@@ -496,7 +496,7 @@
 									<div class="max-h-72 overflow-y-auto">
 										{#each results.length ? results : row.candidates as c (c.video_id)}
 											<button
-												class="flex w-full cursor-pointer items-center rounded-lg px-2 py-1.5 text-left transition-colors hover:bg-accent/10"
+												class="flex w-full cursor-pointer items-center rounded-lg px-2 py-1.5 text-left state-layer"
 												onclick={() => choose(row, c)}
 											>
 												{@render songLine(c)}
@@ -551,7 +551,7 @@
 						aria-label={t('dialogs.new_playlist.where')}
 					>
 						{#each [{ v: 'account', icon: CloudIcon }, { v: 'device', icon: ComputerIcon }] as o (o.v)}
-							<label class="flex cursor-pointer items-center gap-3 rounded-2xl border px-3 py-2 transition-colors hover:bg-accent/10 has-[[data-state=checked]]:border-primary has-[[data-state=checked]]:bg-primary/5">
+							<label class="flex cursor-pointer items-center gap-3 rounded-lg border border-outline-variant px-3 py-2 state-layer has-[[data-state=checked]]:border-primary has-[[data-state=checked]]:bg-secondary-container">
 								<RadioGroup.Item value={o.v} />
 								<HugeiconsIcon icon={o.icon} class="h-4 w-4 shrink-0 text-muted-foreground" />
 								<span class="text-sm">{t(o.v === 'account' ? 'dialogs.new_playlist.account' : 'dialogs.new_playlist.device')}</span>

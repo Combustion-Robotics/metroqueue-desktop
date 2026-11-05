@@ -158,12 +158,12 @@
 	>
 		<div
 			transition:scale={{ duration: 180, start: 0.96, easing: cubicOut }}
-			class="w-full max-w-md rounded-xl border bg-card p-4 shadow-xl"
+			class="w-full max-w-md rounded-xl bg-surface-container-high p-5 shadow-lg"
 		>
 			<div class="mb-4 flex items-center justify-between">
 				<h2 class="text-base font-semibold">{t('dialogs.share.title')}</h2>
 				<button
-					class="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+					class="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full text-muted-foreground state-layer hover:text-foreground"
 					onclick={close}
 					aria-label={t('common.close')}
 				>
@@ -191,7 +191,7 @@
 				</div>
 			</div>
 
-			<div class="mt-4 flex items-center gap-2 rounded-lg border bg-muted/40 py-1 pl-3 pr-1">
+			<div class="mt-4 flex items-center gap-2 rounded-lg bg-surface-container py-1 pl-3 pr-1">
 				<input
 					class="min-w-0 flex-1 bg-transparent py-1 text-sm text-muted-foreground outline-none"
 					value={url}
@@ -199,7 +199,7 @@
 					onfocus={(e) => e.currentTarget.select()}
 				/>
 				<button
-					class="flex h-8 shrink-0 cursor-pointer items-center gap-1.5 rounded-md px-2.5 text-sm transition-colors hover:bg-accent/10"
+					class="flex h-8 shrink-0 cursor-pointer items-center gap-1.5 rounded-md px-2.5 text-sm state-layer"
 					onclick={copy}
 					aria-label={t('dialogs.share.copy_link')}
 				>
@@ -245,7 +245,7 @@
 			{/if}
 
 			{#if wasPrivate && canToggle}
-				<div class="mt-3 flex items-center justify-between gap-4 rounded-lg border px-3 py-2.5">
+				<div class="mt-3 flex items-center justify-between gap-4 rounded-lg bg-surface-container px-3 py-2.5">
 					<div class="min-w-0">
 						<div class="text-sm font-medium">{t('common.public')}</div>
 						<p class="text-xs text-muted-foreground">

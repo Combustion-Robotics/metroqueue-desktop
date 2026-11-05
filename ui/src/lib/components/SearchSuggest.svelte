@@ -171,7 +171,7 @@
 			id="search-suggest"
 			role="listbox"
 			aria-label={t('a11y.search_preview')}
-			class="absolute top-full z-50 mt-2 overflow-hidden rounded-xl border bg-popover text-popover-foreground shadow-xl animate-in fade-in-0 zoom-in-95 duration-150 {panelClass}"
+			class="absolute top-full z-50 mt-2 overflow-hidden rounded-xl bg-surface-container-high text-on-surface shadow-md animate-in fade-in-0 zoom-in-95 duration-150 {panelClass}"
 		>
 			{#if loading && !items.length && !queries.length}
 				{#each Array(4) as _, i (i)}
@@ -276,7 +276,7 @@
 			     submit button removed from the DOM before the click completes never submits (#125). -->
 			<button
 				type="button"
-				class="flex w-full cursor-pointer items-center gap-2 border-t bg-muted/30 px-3 py-2 text-left text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+				class="flex w-full cursor-pointer items-center gap-2 border-t border-outline-variant/60 px-3 py-2 text-left text-label-md text-on-surface-variant state-layer"
 				onmousedown={(e) => e.preventDefault()}
 				onmouseenter={() => (active = -1)}
 				onclick={(e) => {

@@ -155,7 +155,7 @@
 		aria-label={t('common.close')}
 	></button>
 	<div
-		class="fixed z-50 w-72 animate-in rounded-xl border bg-popover p-4 text-popover-foreground shadow-xl duration-150 fade-in-0 zoom-in-95"
+		class="fixed z-50 w-72 animate-in rounded-lg bg-surface-container p-4 text-on-surface shadow-md duration-150 fade-in-0 zoom-in-95"
 		style={anchor.style}
 		{@attach fitMenu(anchor)}
 	>
@@ -173,7 +173,7 @@
 		{#if others.length > 0}
 			<div class="mb-2 space-y-0.5">
 				{#each others as account (account.id)}
-					<div class="flex items-center gap-2 rounded-md px-3 py-1 hover:bg-muted">
+					<div class="flex items-center gap-2 rounded-md px-3 py-1 state-layer">
 						<button
 							type="button"
 							onclick={() => chooseAccount(account)}

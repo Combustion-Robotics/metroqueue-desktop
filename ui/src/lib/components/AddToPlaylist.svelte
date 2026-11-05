@@ -144,12 +144,12 @@
 	>
 		<div
 			transition:scale={{ duration: 180, start: 0.96, easing: cubicOut }}
-			class="flex max-h-[32rem] w-full max-w-sm flex-col rounded-xl border bg-card p-4 shadow-xl"
+			class="flex max-h-[32rem] w-full max-w-sm flex-col rounded-xl bg-surface-container-high p-5 shadow-lg"
 		>
 			<div class="mb-3 flex items-center gap-2">
 				{#if step === 'dupes'}
 					<button
-						class="-ml-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+						class="-ml-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-muted-foreground state-layer hover:text-foreground"
 						onclick={() => (step = 'pick')}
 						aria-label={t('common.back')}
 					>
@@ -157,7 +157,7 @@
 					</button>
 				{/if}
 				<div class="min-w-0 flex-1">
-					<h2 class="font-heading text-base font-semibold">
+					<h2 class="text-title-lg">
 						{step === 'pick' ? t('player.add_to_playlist') : t('add_playlist.dupes_title')}
 					</h2>
 					{#if step === 'dupes'}
@@ -167,7 +167,7 @@
 					{/if}
 				</div>
 				<button
-					class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+					class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-muted-foreground state-layer hover:text-foreground"
 					onclick={close}
 					aria-label={t('a11y.close')}
 				>
@@ -176,7 +176,7 @@
 			</div>
 			{#if step === 'pick'}
 				<button
-					class="mb-1 flex w-full items-center gap-3 rounded-lg p-2 text-left hover:bg-accent/10"
+					class="mb-1 flex w-full items-center gap-3 rounded-lg p-2 text-left state-layer"
 					onclick={createNew}
 				>
 					<div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
@@ -197,7 +197,7 @@
 								toggleSelect(matches[0].id);
 							}
 						}}
-						class="mb-2 w-full rounded-lg border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+						class="mb-2 h-10 w-full rounded-full bg-surface-container-highest px-4 text-body-md outline-none placeholder:text-on-surface-variant focus-visible:ring-2 focus-visible:ring-primary"
 					/>
 				{/if}
 				{#if loading}
@@ -206,7 +206,7 @@
 					<div class="min-h-0 flex-1 overflow-y-auto">
 						{#each matches as pl (pl.id)}
 							<button
-								class="flex w-full items-center gap-3 rounded-lg p-2 text-left hover:bg-accent/10"
+								class="flex w-full items-center gap-3 rounded-lg p-2 text-left state-layer"
 								onclick={() => toggleSelect(pl.id)}
 								aria-pressed={selectedIds.includes(pl.id)}
 							>
@@ -304,7 +304,7 @@
 					<div class="mt-3 flex flex-col gap-2">
 						<button
 							bind:this={skipBtn}
-							class="flex w-full items-center gap-3 rounded-xl bg-primary p-3 text-left text-primary-foreground transition-colors outline-none hover:bg-primary/85 focus-visible:ring-[3px] focus-visible:ring-ring/50"
+							class="flex w-full items-center gap-3 rounded-lg bg-primary p-3 text-left text-on-primary state-layer outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
 							onclick={() => add('skip')}
 						>
 							<span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary-foreground/15">
@@ -317,14 +317,14 @@
 								</span>
 							</span>
 							{#if skipAdds}
-								<span class="font-heading text-base font-semibold tabular-nums">
+								<span class="text-title-md tabular-nums">
 									{t('add_playlist.adds', { count: skipAdds })}
 								</span>
 							{/if}
 						</button>
 						{#if anywayAdds > skipAdds}
 							<button
-								class="flex w-full items-center gap-3 rounded-xl border p-3 text-left transition-colors outline-none hover:bg-muted focus-visible:ring-[3px] focus-visible:ring-ring/50"
+								class="flex w-full items-center gap-3 rounded-lg bg-surface-container p-3 text-left state-layer outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
 								onclick={() => add('anyway')}
 							>
 								<span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted">
@@ -336,7 +336,7 @@
 										{localDupes ? t('add_playlist.anyway_hint_local') : t('add_playlist.anyway_hint')}
 									</span>
 								</span>
-								<span class="font-heading text-base font-semibold tabular-nums">
+								<span class="text-title-md tabular-nums">
 									{t('add_playlist.adds', { count: anywayAdds })}
 								</span>
 							</button>

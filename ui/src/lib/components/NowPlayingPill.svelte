@@ -15,7 +15,7 @@
 </script>
 
 <button
-	class="absolute bottom-3 left-1/2 z-10 flex -translate-x-1/2 cursor-pointer items-center gap-1.5 rounded-full border bg-popover px-3 py-1.5 text-xs font-medium text-popover-foreground shadow-lg hover:bg-accent"
+	class="absolute bottom-3 left-1/2 z-10 flex -translate-x-1/2 cursor-pointer items-center gap-1.5 rounded-full bg-secondary-container px-3 py-1.5 text-label-lg text-on-secondary-container shadow-md state-layer"
 	{onclick}
 	transition:fade={{ duration: reducedMotion.current ? 0 : 150 }}
 >

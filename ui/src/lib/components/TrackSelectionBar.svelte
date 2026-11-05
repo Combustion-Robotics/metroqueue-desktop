@@ -98,7 +98,7 @@
 {#if selection.active}
 	<div
 		transition:fly={{ y: 16, duration: 220, easing: cubicOut }}
-		class="fixed bottom-24 left-1/2 z-40 flex max-w-[min(44rem,calc(100vw-2rem))] -translate-x-1/2 flex-col gap-1 rounded-2xl border bg-card px-2 py-2 shadow-lg"
+		class="fixed bottom-24 left-1/2 z-40 flex max-w-[min(44rem,calc(100vw-2rem))] -translate-x-1/2 flex-col gap-1 rounded-xl bg-surface-container-high px-2 py-2 shadow-lg"
 		data-track-selection
 	>
 		<div class="flex flex-wrap items-center justify-center gap-1" role="group" aria-label={t('selection.actions')}>
@@ -114,7 +114,7 @@
 			</span>
 
 			{#if selection.count}
-				<span class="mx-1 h-5 w-px shrink-0 bg-border"></span>
+				<span class="mx-1 h-5 w-px shrink-0 bg-outline-variant"></span>
 				<Button variant="ghost" size="icon" disabled={blocked} onkeydown={onKey}
 					title={t('player.play_next')} aria-label={t('player.play_next')}
 					onclick={() => queue(true)}>
@@ -156,7 +156,7 @@
 				{/if}
 			{/if}
 
-			<span class="mx-1 h-5 w-px shrink-0 bg-border"></span>
+			<span class="mx-1 h-5 w-px shrink-0 bg-outline-variant"></span>
 			{#if !selection.allSelected}
 				<Button variant="ghost" size="sm" disabled={!selection.selectAllCount || selection.selectingAll}
 					onkeydown={onKey}
