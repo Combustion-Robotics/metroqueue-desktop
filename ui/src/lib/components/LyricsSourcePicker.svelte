@@ -198,7 +198,7 @@
 
 <Popover.Root bind:open>
 	<Popover.Trigger
-		class="group -ml-2 flex min-w-0 cursor-pointer items-center gap-1.5 rounded-full py-0.5 pl-2 pr-1.5 transition-colors hover:bg-foreground/10 hover:text-foreground data-[state=open]:bg-foreground/10 data-[state=open]:text-foreground"
+		class="group -ml-2 flex min-w-0 cursor-pointer items-center gap-1.5 rounded-full py-0.5 pl-2 pr-1.5 state-layer hover:text-foreground data-[state=open]:bg-foreground/10 data-[state=open]:text-foreground"
 		title={lyrics?.pinned ? t('lyrics.chosen') : undefined}
 	>
 		{#if !lyrics}
@@ -224,7 +224,7 @@
 	>
 		<div class="flex items-start gap-3 border-b px-4 pb-3 pt-3.5">
 			<div class="min-w-0 flex-1">
-				<p class="font-heading text-sm font-semibold">{t('lyrics.sources_title')}</p>
+				<p class="text-title-sm">{t('lyrics.sources_title')}</p>
 				<p class="mt-0.5 text-xs leading-relaxed text-muted-foreground">{t('lyrics.sources_hint')}</p>
 			</div>
 			<Button
@@ -264,7 +264,7 @@
 					role="radio"
 					aria-checked={!pinned}
 					onclick={() => pinned && choose(null)}
-					class="flex w-full cursor-pointer items-center gap-3 rounded-xl px-2.5 py-2 text-left transition-colors hover:bg-muted/60 {pinned
+					class="flex w-full cursor-pointer items-center gap-3 rounded-md px-2.5 py-2 text-left state-layer {pinned
 						? ''
 						: 'bg-muted/50'}"
 				>
@@ -289,7 +289,7 @@
 						<HugeiconsIcon icon={Tick02Icon} class="h-4 w-4 shrink-0 text-primary" />
 					{/if}
 				</button>
-				<div class="mx-2.5 my-1.5 h-px bg-border/70"></div>
+				<div class="mx-2.5 my-1.5 h-px bg-outline-variant"></div>
 			{/if}
 
 			<div>
@@ -308,9 +308,9 @@
 							if (r.status === 'idle' || r.status === 'error') check(p.id);
 							else if (hit && !chosen) choose(p.id);
 						}}
-						class="group flex w-full items-center gap-3 rounded-xl px-2.5 py-2 text-left transition-colors {dead
+						class="group flex w-full items-center gap-3 rounded-md px-2.5 py-2 text-left {dead
 							? 'cursor-default'
-							: 'cursor-pointer hover:bg-muted/60'} {chosen ? 'bg-muted/50' : ''}"
+							: 'cursor-pointer state-layer'} {chosen ? 'bg-secondary-container' : ''}"
 					>
 						<!-- The dot is what's on screen, whether Automatic put it there or you did. -->
 						<span
@@ -375,9 +375,9 @@
 					<p class="text-sm font-medium">{t('lyrics.timing')}</p>
 					<p class="text-xs leading-snug text-muted-foreground">{t('lyrics.timing_hint')}</p>
 				</div>
-				<div class="flex shrink-0 items-center rounded-full border bg-muted/40">
+				<div class="flex shrink-0 items-center rounded-full bg-surface-container-high">
 					<button
-						class="flex h-7 w-7 cursor-pointer items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-foreground/10 hover:text-foreground disabled:pointer-events-none disabled:opacity-40"
+						class="flex h-7 w-7 cursor-pointer items-center justify-center rounded-full text-muted-foreground state-layer hover:text-foreground disabled:pointer-events-none disabled:opacity-40"
 						disabled={busy !== null}
 						aria-label={t('lyrics.timing_earlier')}
 						title={t('lyrics.timing_earlier')}
@@ -392,7 +392,7 @@
 						{offsetLabel}
 					</span>
 					<button
-						class="flex h-7 w-7 cursor-pointer items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-foreground/10 hover:text-foreground disabled:pointer-events-none disabled:opacity-40"
+						class="flex h-7 w-7 cursor-pointer items-center justify-center rounded-full text-muted-foreground state-layer hover:text-foreground disabled:pointer-events-none disabled:opacity-40"
 						disabled={busy !== null}
 						aria-label={t('lyrics.timing_later')}
 						title={t('lyrics.timing_later')}
@@ -403,7 +403,7 @@
 				</div>
 				<!-- Held in place when there's nothing to reset, so the stepper doesn't jump. -->
 				<button
-					class="flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-foreground/10 hover:text-foreground {offset
+					class="flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-full text-muted-foreground state-layer hover:text-foreground {offset
 						? ''
 						: 'invisible'}"
 					aria-label={t('lyrics.timing_reset')}
@@ -418,7 +418,7 @@
 		{#if lyrics?.provider === 'unison'}
 			<!-- Unison votes are signed with a Better Lyrics key, so they happen on its site (#342). -->
 			<button
-				class="flex w-full cursor-pointer items-center gap-2 border-t px-4 py-2.5 text-xs text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
+				class="flex w-full cursor-pointer items-center gap-2 border-t px-4 py-2.5 text-xs text-muted-foreground state-layer hover:text-foreground"
 				onclick={() =>
 					api.openExternal(`https://unison.betterlyrics.org/song/${encodeURIComponent(track.videoId)}`)}
 			>
@@ -451,7 +451,7 @@
 			</form>
 		{:else}
 			<button
-				class="flex w-full cursor-pointer items-center gap-2 border-t px-4 py-2.5 text-xs text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
+				class="flex w-full cursor-pointer items-center gap-2 border-t px-4 py-2.5 text-xs text-muted-foreground state-layer hover:text-foreground"
 				onclick={openSearch}
 			>
 				<HugeiconsIcon icon={Search01Icon} class="h-3.5 w-3.5" />

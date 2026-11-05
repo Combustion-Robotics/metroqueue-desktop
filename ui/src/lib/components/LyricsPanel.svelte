@@ -34,8 +34,8 @@
 	class={expanded
 		? // ponytail: left offsets mirror Sidebar's w-20/lg:w-60 (and its manual collapse), right
 			// offset mirrors QueuePanel's w-80 — keep in sync if those change.
-			`absolute inset-y-0 left-20 right-0 z-30 flex h-full flex-col border-l bg-card/95 shadow-2xl ${ui.sidebarCollapsed ? '' : 'lg:left-60'} ${queueOpen ? 'lg:right-80' : ''}`
-		: `absolute inset-y-0 right-0 z-30 flex h-full w-80 max-w-[80vw] flex-col border-l bg-card/95 shadow-2xl ${queueOpen ? 'lg:right-80' : ''}`}
+			`absolute inset-y-0 left-20 right-0 z-30 flex h-full flex-col border-l bg-card/95 shadow-md ${ui.sidebarCollapsed ? '' : 'lg:left-60'} ${queueOpen ? 'lg:right-80' : ''}`
+		: `absolute inset-y-0 right-0 z-30 flex h-full w-80 max-w-[80vw] flex-col border-l bg-card/95 shadow-md ${queueOpen ? 'lg:right-80' : ''}`}
 >
 	<div data-side-panel-header class="flex items-center justify-between pt-3 pr-3 pb-1 pl-5">
 		<h2 class="text-title-lg">{t('lyrics.title')}</h2>

@@ -539,7 +539,7 @@
 				<p class="max-w-64 text-xs text-muted-foreground/80">{t('lyrics.none_found_hint')}</p>
 				<button
 					onclick={() => (pickerOpen = true)}
-					class="mt-2 flex cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors hover:bg-foreground/5"
+					class="mt-2 flex cursor-pointer items-center gap-1.5 rounded-full border border-outline-variant px-3 py-1.5 text-label-lg state-layer"
 				>
 					<HugeiconsIcon icon={Search01Icon} class="h-3.5 w-3.5" />
 					{t('lyrics.find')}
@@ -549,7 +549,7 @@
 	{/if}
 </div>
 {#if track && !loading && !compact}
-	<div class="mt-3 flex items-center gap-1 border-t border-border/60 px-4 pt-2 pb-1.5 text-xs text-muted-foreground">
+	<div class="mt-3 flex items-center gap-1 border-t border-outline-variant/60 px-4 pt-2 pb-1.5 text-xs text-muted-foreground">
 		<!-- The source is the switch (#23): a popover with every provider's answer for this song. -->
 		<div class="flex min-w-0 flex-1">
 			<LyricsSourcePicker {lyrics} {track} bind:open={pickerOpen} onchange={onPicked} />
@@ -579,7 +579,7 @@
 		{#if canResize}
 			<Popover.Root>
 				<Popover.Trigger
-					class="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full px-2 py-0.5 transition-colors hover:bg-foreground/10 hover:text-foreground data-[state=open]:bg-foreground/10 data-[state=open]:text-foreground {sizeChanged
+					class="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full px-2 py-0.5 state-layer hover:text-foreground data-[state=open]:bg-foreground/10 data-[state=open]:text-foreground {sizeChanged
 						? 'text-primary'
 						: ''}"
 					title={t('lyrics.text_size_hint')}
@@ -596,9 +596,9 @@
 								{t('lyrics.text_size_hint')}
 							</p>
 						</div>
-						<div class="flex shrink-0 items-center rounded-full border bg-muted/40">
+						<div class="flex shrink-0 items-center rounded-full bg-surface-container-high">
 							<button
-								class="flex h-7 w-7 cursor-pointer items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-foreground/10 hover:text-foreground disabled:pointer-events-none disabled:opacity-40"
+								class="flex h-7 w-7 cursor-pointer items-center justify-center rounded-full text-muted-foreground state-layer hover:text-foreground disabled:pointer-events-none disabled:opacity-40"
 								disabled={size.value === SIZES[0]}
 								aria-label={t('lyrics.text_size_smaller')}
 								title={t('lyrics.text_size_smaller')}
@@ -615,7 +615,7 @@
 								{sizeLabel}
 							</span>
 							<button
-								class="flex h-7 w-7 cursor-pointer items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-foreground/10 hover:text-foreground disabled:pointer-events-none disabled:opacity-40"
+								class="flex h-7 w-7 cursor-pointer items-center justify-center rounded-full text-muted-foreground state-layer hover:text-foreground disabled:pointer-events-none disabled:opacity-40"
 								disabled={size.value === SIZES[SIZES.length - 1]}
 								aria-label={t('lyrics.text_size_larger')}
 								title={t('lyrics.text_size_larger')}
@@ -634,7 +634,7 @@
 {#snippet prefToggle(pref: Pref, on: boolean, icon: typeof TranslateIcon, label: string, hint: string)}
 	<button
 		onclick={() => toggle(pref)}
-		class="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full px-2 py-0.5 transition-colors hover:bg-foreground/10 {on
+		class="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full px-2 py-0.5 state-layer {on
 			? 'text-primary'
 			: 'hover:text-foreground'}"
 		aria-pressed={on}

@@ -251,7 +251,7 @@
 {#snippet volPlate()}
 	<div
 		transition:fade={{ duration: 120 }}
-		class="pointer-events-none absolute left-3 top-1/2 z-10 flex -translate-y-1/2 flex-col items-center gap-2 rounded-full border bg-popover/90 px-2 py-3 text-popover-foreground"
+		class="pointer-events-none absolute left-3 top-1/2 z-10 flex -translate-y-1/2 flex-col items-center gap-2 rounded-full bg-surface-container-highest px-2 py-3 text-on-surface shadow-md"
 	>
 		<HugeiconsIcon
 			icon={VolumeHighIcon}
@@ -350,7 +350,7 @@
 			onerror={imgFailed}
 			onload={(e) => isMissingThumb(e) && imgFailed()}
 			style={srcs[2] ? `background-image:url(${srcs[2]})` : undefined}
-			class="aspect-square w-full rounded-2xl bg-cover object-cover {stage ? '' : 'shadow-2xl'}"
+			class="aspect-square w-full rounded-2xl bg-cover object-cover"
 		/>
 	{:else}
 		<div
@@ -733,7 +733,7 @@
 									type="button"
 									onclick={() => pickVersion(!videoSide())}
 									aria-label={showVideo() ? t('a11y.show_artwork') : t('a11y.show_video')}
-									class="cursor-pointer rounded-md bg-black/40 p-1.5 text-white/70 transition-colors hover:text-white"
+									class="cursor-pointer rounded-full bg-black/40 p-1.5 text-white/70 transition-colors hover:text-white"
 								>
 									<!-- icon swap via altIcon/showAlt: `icon` is frozen at mount -->
 									<HugeiconsIcon
@@ -754,7 +754,7 @@
 									}}
 									aria-label={t('player.fullscreen_video')}
 									title="{t('player.fullscreen_video')} (F)"
-									class="cursor-pointer rounded-md bg-black/40 p-1.5 text-white/70 transition-colors hover:text-white"
+									class="cursor-pointer rounded-full bg-black/40 p-1.5 text-white/70 transition-colors hover:text-white"
 								>
 									<HugeiconsIcon icon={FullScreenIcon} class="h-4 w-4" />
 								</button>

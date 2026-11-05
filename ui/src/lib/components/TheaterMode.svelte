@@ -474,7 +474,7 @@
 		<div class="min-w-0">
 			<!-- The queue column says this itself. -->
 			{#if !queueShown}
-				<p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
+				<p class="text-label-md text-on-surface-variant">
 					{playback.queue.sourceName ? t('player.playing_from') : t('player.now_playing')}
 				</p>
 				{#if playback.queue.sourceName}
@@ -695,7 +695,7 @@
 					transition:fly={{ x: 24, duration: 350, easing: cubicOut }}
 					onclick={() => api.nextTrack()}
 					style="bottom:{dockH + 16}px"
-					class="absolute right-8 z-20 flex w-80 cursor-pointer items-center gap-3 rounded-2xl border border-foreground/10 bg-background/80 p-2.5 pr-4 text-left transition-colors hover:bg-background xl:right-14"
+					class="absolute right-8 z-20 flex w-80 cursor-pointer items-center gap-3 rounded-xl bg-surface-container-high/90 p-2.5 pr-4 text-left state-layer xl:right-14"
 					aria-label="{t('player.up_next')}: {upNext.title}"
 				>
 					{#if upNext.thumbnail}
@@ -706,7 +706,7 @@
 						/>
 					{/if}
 					<div class="min-w-0">
-						<p class="text-[10px] font-semibold uppercase tracking-[0.2em] text-primary">
+						<p class="text-label-md text-primary">
 							{t('player.up_next')}
 						</p>
 						<p class="truncate text-sm font-semibold">{upNext.title}</p>
