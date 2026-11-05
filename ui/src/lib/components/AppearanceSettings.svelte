@@ -21,6 +21,7 @@
 	} from '@hugeicons/core-free-icons';
 	import { Button } from '$lib/components/ui/button';
 	import { Switch } from '$lib/components/ui/switch';
+	import * as Segmented from '$lib/components/ui/segmented-button';
 	import * as Popover from '$lib/components/ui/popover';
 	import ColorPicker from '$lib/components/ColorPicker.svelte';
 	import ThemeMock from '$lib/components/ThemeMock.svelte';
@@ -261,22 +262,14 @@
 <!-- Segmented, like audio quality: one exclusive choice. Under the description rather than beside
      the title, so a wide font or a long translation doesn't squeeze the title onto two lines. -->
 {#snippet modePicker()}
-	<div class="inline-flex rounded-lg bg-muted p-0.5">
+	<Segmented.Root>
 		{#each MODES as m (m.id)}
-			<button
-				type="button"
-				onclick={() => setMode(m.id)}
-				aria-pressed={userPrefersMode.current === m.id}
-				class="flex cursor-pointer items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors {userPrefersMode.current ===
-				m.id
-					? 'bg-background text-foreground shadow-sm'
-					: 'text-muted-foreground hover:text-foreground'}"
-			>
-				<HugeiconsIcon icon={m.icon} size={14} strokeWidth={2} />
+			<Segmented.Item onclick={() => setMode(m.id)} selected={userPrefersMode.current === m.id}>
+				<HugeiconsIcon icon={m.icon} size={18} strokeWidth={2} />
 				{m.label}
-			</button>
+			</Segmented.Item>
 		{/each}
-	</div>
+	</Segmented.Root>
 {/snippet}
 
 {#snippet seedSwatches()}

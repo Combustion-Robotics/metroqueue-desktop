@@ -24,6 +24,7 @@
 		Video01Icon
 	} from '@hugeicons/core-free-icons';
 	import { Skeleton } from '$lib/components/ui/skeleton';
+	import { Chip } from '$lib/components/ui/chip';
 	import ErrorState from '$lib/components/ErrorState.svelte';
 	import MediaCard from '$lib/components/MediaCard.svelte';
 	import MediaCardSkeleton from '$lib/components/MediaCardSkeleton.svelte';
@@ -335,12 +336,6 @@
 		artists: t('common.artists'),
 		playlists: t('common.playlists')
 	});
-	const chipClass = (active: boolean) =>
-		`shrink-0 cursor-pointer rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors ${
-			active
-				? 'bg-primary text-primary-foreground'
-				: 'bg-foreground/5 text-foreground/75 hover:bg-foreground/10 hover:text-foreground'
-		}`;
 
 	// The field sits on the header's wash until it pins to the top, and only then needs a
 	// background of its own (home's chip bar does the same).
@@ -455,13 +450,9 @@
 					{#each CATS as c (c)}
 						<!-- Hidden with music videos off: there is no such thing as a video search then. -->
 						{#if c !== 'videos' || videos.length}
-							<button
-								class={chipClass(cat === c)}
-								aria-pressed={cat === c}
-								onclick={() => pickCat(c)}
-							>
+							<Chip selected={cat === c} onclick={() => pickCat(c)}>
 								{LABEL[c]}
-							</button>
+							</Chip>
 						{/if}
 					{/each}
 				</div>

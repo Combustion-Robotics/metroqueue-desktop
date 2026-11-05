@@ -21,6 +21,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import { Switch } from '$lib/components/ui/switch';
+	import * as Segmented from '$lib/components/ui/segmented-button';
 	import { Alert, AlertDescription } from '$lib/components/ui/alert';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import * as Popover from '$lib/components/ui/popover';
@@ -931,21 +932,13 @@
 
 <!-- Segmented, not three buttons: the options are one exclusive choice and should look like it. -->
 {#snippet qualityPicker()}
-	<div class="flex rounded-lg bg-muted p-0.5">
+	<Segmented.Root>
 		{#each QUALITIES as q (q.id)}
-			<button
-				type="button"
-				onclick={() => setQuality(q.id)}
-				aria-pressed={quality === q.id}
-				class="cursor-pointer rounded-md px-3.5 py-1.5 text-xs font-medium transition-colors {quality ===
-				q.id
-					? 'bg-background text-foreground shadow-sm'
-					: 'text-muted-foreground hover:text-foreground'}"
-			>
+			<Segmented.Item onclick={() => setQuality(q.id)} selected={quality === q.id}>
 				{t(q.key)}
-			</button>
+			</Segmented.Item>
 		{/each}
-	</div>
+	</Segmented.Root>
 {/snippet}
 
 {#snippet clientList()}

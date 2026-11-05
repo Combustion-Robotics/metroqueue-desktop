@@ -121,7 +121,7 @@
 		value={Math.round(hsv.h)}
 		onValueChange={(h) => set({ ...hsv, h }, false)}
 		onValueCommit={() => onchange(text)}
-		class="[&_[data-slot=slider-range]]:bg-transparent [&_[data-slot=slider-track]]:bg-[linear-gradient(to_right,#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00)]"
+		class="[&_[data-slot=slider-range]]:bg-transparent [&_[data-slot=slider-inactive]]:hidden [&_[data-slot=slider-track]]:bg-[linear-gradient(to_right,#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00)]"
 	/>
 
 	<div class="flex items-center gap-2">

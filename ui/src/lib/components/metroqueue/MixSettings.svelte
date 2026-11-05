@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount, type Snippet } from 'svelte';
 	import { Switch } from '$lib/components/ui/switch';
+	import * as Segmented from '$lib/components/ui/segmented-button';
 	import { Slider } from '$lib/components/ui/slider';
 	import * as api from '$lib/api';
 	import { toast } from '$lib/player.svelte';
@@ -57,21 +58,13 @@
 </script>
 
 {#snippet picker<T extends string>(items: readonly T[], value: T, pick: (v: T) => void, key: string)}
-	<div class="flex flex-wrap justify-end rounded-lg bg-muted p-0.5">
+	<Segmented.Root class="flex-wrap justify-end">
 		{#each items as item (item)}
-			<button
-				type="button"
-				onclick={() => pick(item)}
-				aria-pressed={value === item}
-				class="cursor-pointer rounded-md px-3 py-1.5 text-xs font-medium transition-colors {value ===
-				item
-					? 'bg-background text-foreground shadow-sm'
-					: 'text-muted-foreground hover:text-foreground'}"
-			>
+			<Segmented.Item onclick={() => pick(item)} selected={value === item}>
 				{t(`settings.mix.${key}_${item.toLowerCase()}` as TranslationKey)}
-			</button>
+			</Segmented.Item>
 		{/each}
-	</div>
+	</Segmented.Root>
 {/snippet}
 
 {#snippet row(title: string, desc: string, control: Snippet)}

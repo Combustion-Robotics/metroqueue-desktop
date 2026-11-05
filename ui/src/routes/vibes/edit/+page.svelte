@@ -11,6 +11,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import { Switch } from '$lib/components/ui/switch';
+	import { Chip } from '$lib/components/ui/chip';
 	import VibeScene from '$lib/components/VibeScene.svelte';
 	import * as api from '$lib/api';
 	import type { BrowseItem } from '$lib/api';
@@ -147,12 +148,6 @@
 	const key = (group: string, v: string) =>
 		`vibes.${group}.${v.replace(/[A-Z]/g, (c, i) => (i ? '_' : '') + c.toLowerCase())}` as TranslationKey;
 
-	const chipClass = (active: boolean) =>
-		`shrink-0 cursor-pointer rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors ${
-			active
-				? 'bg-primary text-primary-foreground'
-				: 'bg-foreground/5 text-foreground/75 hover:bg-foreground/10 hover:text-foreground'
-		}`;
 	const SECTION = 'mt-5 mb-2 text-sm font-semibold text-primary';
 </script>
 
@@ -160,7 +155,7 @@
 	<h2 class={SECTION}>{title}</h2>
 	<div class="flex flex-wrap gap-2">
 		{#each options as o (o)}
-			<button class={chipClass(on(o))} aria-pressed={on(o)} onclick={() => set(o)}>{label(o)}</button>
+			<Chip selected={on(o)} onclick={() => set(o)}>{label(o)}</Chip>
 		{/each}
 	</div>
 {/snippet}
@@ -217,16 +212,12 @@
 
 	<h2 class={SECTION}>{t('vibes.music')}</h2>
 	<div class="flex flex-wrap gap-2">
-		<button
-			class={chipClass(!usePlaylist)}
-			aria-pressed={!usePlaylist}
-			onclick={() => ((usePlaylist = false), (musicTouched = true))}>{t('vibes.endless_radio')}</button
-		>
-		<button
-			class={chipClass(usePlaylist)}
-			aria-pressed={usePlaylist}
-			onclick={() => ((usePlaylist = true), (musicTouched = true))}>{t('vibes.playlist')}</button
-		>
+		<Chip selected={!usePlaylist} onclick={() => ((usePlaylist = false), (musicTouched = true))}>
+			{t('vibes.endless_radio')}
+		</Chip>
+		<Chip selected={usePlaylist} onclick={() => ((usePlaylist = true), (musicTouched = true))}>
+			{t('vibes.playlist')}
+		</Chip>
 	</div>
 	{#if !usePlaylist}
 		<label class="mt-3 block">
@@ -237,9 +228,9 @@
 		{#if playlists.length}
 			<div class="mt-3 flex flex-wrap gap-2">
 				{#each playlists as p (p.id)}
-					<button class={chipClass(picked?.id === p.id)} aria-pressed={picked?.id === p.id} onclick={() => pick(p)}>
+					<Chip selected={picked?.id === p.id} onclick={() => pick(p)}>
 						{p.title}
-					</button>
+					</Chip>
 				{/each}
 			</div>
 		{:else}

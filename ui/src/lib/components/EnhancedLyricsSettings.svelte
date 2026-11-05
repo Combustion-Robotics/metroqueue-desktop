@@ -7,6 +7,7 @@
 	import { ArrowTurnBackwardIcon } from '@hugeicons/core-free-icons';
 	import { Button } from '$lib/components/ui/button';
 	import { Switch } from '$lib/components/ui/switch';
+	import * as Segmented from '$lib/components/ui/segmented-button';
 	import { Slider } from '$lib/components/ui/slider';
 	import { t, type TranslationKey } from '$lib/i18n.svelte';
 	import {
@@ -66,22 +67,13 @@
 <!-- Segmented, like audio quality: one exclusive choice. Wraps rather than overflowing when a
      translation runs long. -->
 {#snippet segmented(key: 'lyricsAnim' | 'lyricsStyle', options: readonly string[], prefix: string)}
-	<div class="inline-flex max-w-full flex-wrap rounded-lg bg-muted p-0.5">
+	<Segmented.Root class="flex-wrap">
 		{#each options as opt (opt)}
-			<button
-				type="button"
-				onclick={() => setAppearance({ [key]: opt })}
-				aria-pressed={appearance[key] === opt}
-				class="cursor-pointer rounded-md px-3 py-1.5 text-xs font-medium transition-colors {appearance[
-					key
-				] === opt
-					? 'bg-background text-foreground shadow-sm'
-					: 'text-muted-foreground hover:text-foreground'}"
-			>
+			<Segmented.Item onclick={() => setAppearance({ [key]: opt })} selected={appearance[key] === opt}>
 				{t(`${prefix}${opt}` as TranslationKey)}
-			</button>
+			</Segmented.Item>
 		{/each}
-	</div>
+	</Segmented.Root>
 {/snippet}
 
 {#snippet percent(key: 'lyricsAnimStrength' | 'lyricsGlow')}

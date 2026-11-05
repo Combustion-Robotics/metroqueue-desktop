@@ -17,7 +17,9 @@
 	bind:ref
 	data-slot="checkbox"
 	class={cn(
-		"border-input dark:bg-input/30 data-checked:bg-primary data-checked:text-primary-foreground dark:data-checked:bg-primary data-checked:border-primary aria-invalid:aria-checked:border-primary aria-invalid:border-destructive dark:aria-invalid:border-destructive/50 focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 flex size-4 items-center justify-center rounded-[6px] border transition-shadow group-has-disabled/field:opacity-50 focus-visible:ring-[3px] aria-invalid:ring-[3px] group-has-[:focus-visible]/field-label:ring-0 group-has-[:focus-visible]/field-label:not-data-checked:border-input group-has-[:focus-visible]/field-label:data-checked:border-primary peer relative shrink-0 outline-none after:absolute after:-inset-x-3 after:-inset-y-2 disabled:cursor-not-allowed disabled:opacity-50",
+		// M3: an 18px box with a 2px on-surface-variant border, filled primary when checked, under a
+		// 40px state layer (::before) in on-surface, or primary when checked.
+		"peer group/checkbox relative flex size-[18px] shrink-0 items-center justify-center rounded-[2px] border-2 border-on-surface-variant text-on-surface outline-none motion-control data-[state=checked]:border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary data-[state=indeterminate]:border-primary data-[state=indeterminate]:bg-primary data-[state=indeterminate]:text-primary aria-invalid:border-error aria-invalid:data-[state=checked]:bg-error aria-invalid:data-[state=checked]:border-error before:absolute before:left-1/2 before:top-1/2 before:size-10 before:-translate-1/2 before:rounded-full hover:before:bg-current/8 focus-visible:before:bg-current/10 active:before:bg-current/10 focus-visible:ring-3 focus-visible:ring-ring/50 after:absolute after:-inset-x-3 after:-inset-y-2 group-has-disabled/field:opacity-38 disabled:cursor-not-allowed disabled:opacity-38",
 		className
 	)}
 	bind:checked
@@ -27,7 +29,7 @@
 	{#snippet children({ checked, indeterminate })}
 		<div
 			data-slot="checkbox-indicator"
-			class="[&>svg]:size-3.5 grid place-content-center text-current transition-none"
+			class="[&>svg]:size-3.5 relative grid place-content-center text-on-primary transition-none"
 		>
 			{#if checked}
 				<HugeiconsIcon icon={Tick02Icon} strokeWidth={2} />
