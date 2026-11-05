@@ -16,6 +16,6 @@
 <DialogPrimitive.Overlay
 	bind:ref
 	data-slot="dialog-overlay"
-	class={cn("data-open:animate-in data-closed:animate-out data-closed:fade-out-0 data-open:fade-in-0 bg-black/80 duration-100 fixed inset-0 isolate z-[49]", windowCorners(), className)}
+	class={cn("data-open:animate-in data-closed:animate-out data-closed:fade-out-0 data-open:fade-in-0 bg-black/32 spring-effects data-closed:duration-150 fixed inset-0 isolate z-[49]", windowCorners(), className)}
 	{...restProps}
 />

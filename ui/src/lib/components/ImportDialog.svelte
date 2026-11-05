@@ -241,8 +241,8 @@
 </script>
 
 {#snippet bar(done: number, total: number)}
-	<div class="h-2 w-full overflow-hidden rounded-full bg-muted">
-		<div class="h-full rounded-full bg-primary transition-[width] duration-300" style="width: {pct(done, total)}%"></div>
+	<div class="h-1 w-full overflow-hidden rounded-full bg-secondary-container">
+		<div class="h-full rounded-full bg-primary transition-[width] duration-300 ease-emphasized" style="width: {pct(done, total)}%"></div>
 	</div>
 {/snippet}
 

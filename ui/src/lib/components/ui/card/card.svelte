@@ -7,15 +7,20 @@
 		class: className,
 		children,
 		size = "default",
+		variant = "filled",
 		...restProps
-	}: WithElementRef<HTMLAttributes<HTMLDivElement>> & { size?: "default" | "sm" } = $props();
+	}: WithElementRef<HTMLAttributes<HTMLDivElement>> & {
+		size?: "default" | "sm";
+		variant?: "filled" | "elevated" | "outlined";
+	} = $props();
 </script>
 
 <div
 	bind:this={ref}
 	data-slot="card"
 	data-size={size}
-	class={cn("ring-foreground/10 bg-card text-card-foreground gap-6 overflow-hidden rounded-2xl py-6 text-sm ring-1 has-[>img:first-child]:pt-0 data-[size=sm]:gap-4 data-[size=sm]:py-4 *:[img:first-child]:rounded-t-xl *:[img:last-child]:rounded-b-xl group/card flex flex-col", className)}
+	data-variant={variant}
+	class={cn("text-on-surface gap-6 overflow-hidden rounded-lg py-6 text-body-md data-[variant=filled]:bg-surface-container-highest data-[variant=elevated]:bg-surface-container-low data-[variant=elevated]:shadow-xs data-[variant=outlined]:bg-surface data-[variant=outlined]:border data-[variant=outlined]:border-outline-variant has-[>img:first-child]:pt-0 data-[size=sm]:gap-4 data-[size=sm]:py-4 *:[img:first-child]:rounded-t-lg *:[img:last-child]:rounded-b-lg group/card flex flex-col", className)}
 	{...restProps}
 >
 	{@render children?.()}

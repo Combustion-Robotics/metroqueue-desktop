@@ -13,13 +13,13 @@
 	}: CommandPrimitive.InputProps = $props();
 </script>
 
-<div data-slot="command-input-wrapper" class="p-1 pb-0">
-	<InputGroup.Root class="h-9 bg-input/30">
+<div data-slot="command-input-wrapper" class="border-b border-outline-variant">
+	<InputGroup.Root class="h-14 rounded-none border-0 bg-transparent px-2 dark:bg-transparent has-[[data-slot=input-group-control]:focus-visible]:ring-0">
 		<CommandPrimitive.Input
 			{value}
 			data-slot="command-input"
 			class={cn(
-				"w-full text-sm outline-hidden disabled:cursor-not-allowed disabled:opacity-50",
+				"w-full text-body-lg placeholder:text-on-surface-variant outline-hidden disabled:cursor-not-allowed disabled:opacity-50",
 				className
 			)}
 			{...restProps}
@@ -29,7 +29,7 @@
 			{/snippet}
 		</CommandPrimitive.Input>
 		<InputGroup.Addon>
-			<HugeiconsIcon icon={SearchIcon} strokeWidth={2} class="size-4 shrink-0 opacity-50" />
+			<HugeiconsIcon icon={SearchIcon} strokeWidth={2} class="size-6 shrink-0 text-on-surface" />
 		</InputGroup.Addon>
 	</InputGroup.Root>
 </div>

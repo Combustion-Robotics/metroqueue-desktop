@@ -355,18 +355,20 @@
 		{@const t = ui.toast}
 		<div
 			transition:fly={{ y: 16, duration: 220, easing: cubicOut }}
-			class="fixed bottom-40 left-1/2 z-[100] flex -translate-x-1/2 items-center gap-2 rounded-lg border bg-card px-4 py-2 text-sm shadow-lg"
+			class="fixed bottom-40 left-1/2 z-[100] flex min-h-12 max-w-[min(42rem,calc(100%-2rem))] -translate-x-1/2 items-center gap-3 rounded-xs bg-inverse-surface px-4 py-3.5 text-body-md text-inverse-on-surface shadow-md"
 		>
 			<!-- Three branches instead of a ternary on `icon`: HugeiconsIcon freezes `icon` at mount, so a
 			     new toast replacing a visible one would keep the old glyph. -->
 			{#if t.kind === 'success'}
-				<HugeiconsIcon icon={CheckmarkCircle02Icon} class="h-4 w-4 shrink-0 text-primary" />
+				<HugeiconsIcon icon={CheckmarkCircle02Icon} class="h-5 w-5 shrink-0 text-inverse-primary" />
 			{:else if t.kind === 'error'}
-				<HugeiconsIcon icon={AlertCircleIcon} class="h-4 w-4 shrink-0 text-destructive" />
+				<!-- error-container is the error tone that reads on the inverse surface in both themes, as
+				     inverse-primary is for primary. -->
+				<HugeiconsIcon icon={AlertCircleIcon} class="h-5 w-5 shrink-0 text-error-container" />
 			{:else}
 				<HugeiconsIcon
 					icon={InformationCircleIcon}
-					class="h-4 w-4 shrink-0 text-muted-foreground"
+					class="h-5 w-5 shrink-0 text-inverse-on-surface"
 				/>
 			{/if}
 			{t.msg}

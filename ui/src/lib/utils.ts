@@ -1,5 +1,17 @@
 import { clsx, type ClassValue } from "clsx";
-import { twMerge } from "tailwind-merge";
+import { extendTailwindMerge } from "tailwind-merge";
+
+// The M3 type scale (text-body-md, …) is a font size. Unregistered, tailwind-merge reads it as a
+// text colour and drops it next to one (`text-title-sm text-on-surface` lost the size).
+const twMerge = extendTailwindMerge({
+	extend: {
+		classGroups: {
+			"font-size": [
+				{ text: ["display", "headline", "title", "body", "label"].flatMap((r) => ["lg", "md", "sm"].map((s) => `${r}-${s}`)) },
+			],
+		},
+	},
+});
 
 export function cn(...inputs: ClassValue[]) {
 	return twMerge(clsx(inputs));

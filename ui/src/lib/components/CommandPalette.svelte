@@ -129,8 +129,8 @@
 	<Command.List class="max-h-[22rem]">
 		{#if loading}
 			{#each Array(4) as _, i (i)}
-				<div class="flex items-center gap-3 px-3 py-2">
-					<Skeleton class="h-10 w-10 shrink-0 rounded-md" />
+				<div class="flex items-center gap-4 px-6 py-2">
+					<Skeleton class="h-10 w-10 shrink-0" />
 					<div class="min-w-0 flex-1">
 						<Skeleton class="h-3 w-40 rounded" />
 						<Skeleton class="mt-2 h-2.5 w-24 rounded" />
@@ -138,7 +138,7 @@
 				</div>
 			{/each}
 		{:else if !items.length && !queries.length}
-			<div class="px-4 py-6 text-center text-sm text-muted-foreground">
+			<div class="px-6 py-6 text-center text-body-md text-on-surface-variant">
 				{query.trim().length < 2 ? t('common.type_to_search') : t('common.nothing_quick')}
 			</div>
 		{:else}
@@ -149,7 +149,6 @@
 							value={item.id}
 							onSelect={() => choose(item)}
 							onmouseenter={() => (ctxItem = item)}
-							class="gap-3 px-2 py-1.5"
 						>
 							{#if item.thumbnail}
 								<!-- 400, the same size the cards ask for: the CDN doesn't serve every rewritten
@@ -160,14 +159,14 @@
 									alt=""
 									class="h-10 w-10 shrink-0 object-cover {item.kind === 'artist'
 										? 'rounded-full'
-										: 'rounded-md'}"
+										: 'rounded-sm'}"
 								/>
 							{:else}
 								<div
 									class="flex h-10 w-10 shrink-0 items-center justify-center bg-muted text-muted-foreground/50 {item.kind ===
 									'artist'
 										? 'rounded-full'
-										: 'rounded-md'}"
+										: 'rounded-sm'}"
 								>
 									<HugeiconsIcon
 										icon={item.kind === 'artist' ? UserIcon : MusicNote01Icon}
@@ -176,8 +175,8 @@
 								</div>
 							{/if}
 							<div class="min-w-0 flex-1">
-								<div class="truncate text-sm">{item.title}</div>
-								<div class="flex items-center gap-1 text-xs text-muted-foreground">
+								<div class="truncate text-body-lg">{item.title}</div>
+								<div class="flex items-center gap-1 text-body-md text-on-surface-variant">
 									{#if item.explicit}
 										<ExplicitIcon class="h-3 w-3 shrink-0" />
 									{/if}
@@ -197,16 +196,15 @@
 							value={`q:${q.text}`}
 							onSelect={() => search(q.text)}
 							onmouseenter={() => (ctxItem = null)}
-							class="gap-3 px-2 py-2"
 						>
 							<!-- altIcon/showAlt, not a ternary: HugeiconsIcon freezes `icon` at mount. -->
 							<HugeiconsIcon
 								icon={Search01Icon}
 								altIcon={HistoryIcon}
 								showAlt={q.history}
-								class="h-4 w-4 shrink-0 text-muted-foreground"
+								class="h-5 w-5 shrink-0 text-on-surface-variant"
 							/>
-							<span class="truncate text-sm">{q.text}</span>
+							<span class="truncate">{q.text}</span>
 						</Command.Item>
 					{/each}
 				</Command.Group>
@@ -218,9 +216,9 @@
 				<Command.Item
 					value="__all__"
 					onSelect={() => search(query.trim())}
-					class="gap-2 text-muted-foreground"
+					class="text-on-surface-variant"
 				>
-					<HugeiconsIcon icon={Search01Icon} class="h-3.5 w-3.5" />
+					<HugeiconsIcon icon={Search01Icon} class="h-5 w-5" />
 					<span class="truncate">{t('common.all_results_for', { query: query.trim() })}</span>
 				</Command.Item>
 			</Command.Group>

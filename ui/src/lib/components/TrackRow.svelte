@@ -198,7 +198,7 @@
      reactive ternary, which is the only way HugeiconsIcon takes it (it freezes at mount). -->
 {#snippet rateButton(icon: IconSvgElement, want: 'like' | 'dislike', label: string)}
 	<button
-		class="cursor-pointer rounded-md p-1.5 text-muted-foreground hover:bg-accent/20 hover:text-foreground"
+		class="state-layer cursor-pointer rounded-full p-1.5 text-on-surface-variant hover:text-on-surface"
 		aria-label={rated === want ? t('player.remove_rating') : label}
 		aria-pressed={rated === want}
 		onclick={(e) => {
@@ -245,10 +245,10 @@
 	data-selected={selectable ? selected : undefined}
 	aria-describedby={selectable ? selectionDescriptionId : undefined}
 	aria-label={selectable ? t(guestAdd ? 'selection.track_guest' : 'selection.track', { title: song.title }) : guestAdd ? `Add ${song.title} to the session queue` : `Play ${song.title}`}
-	class="group flex w-full cursor-pointer items-center gap-3 rounded-lg p-2 hover:bg-accent/10 {selected
-		? 'bg-primary/15'
+	class="group state-layer flex w-full cursor-pointer items-center gap-3 rounded-lg p-2 {selected
+		? 'bg-secondary-container text-on-secondary-container'
 		: active
-		? 'bg-accent/10'
+		? 'bg-surface-container-high'
 		: ''} {lazy && !compact ? '[content-visibility:auto] [contain-intrinsic-size:auto_3.5rem]' : ''}"
 >
 	{#if selectable}
@@ -305,12 +305,12 @@
 			{/if}
 			{#if !hideThumb}
 				{#if song.thumbnail}
-					<img src={thumb(song.thumbnail, 96)} alt="" class="h-10 w-10 shrink-0 rounded-md object-cover" loading="lazy" />
+					<img src={thumb(song.thumbnail, 96)} alt="" class="h-10 w-10 shrink-0 rounded-sm object-cover" loading="lazy" />
 				{:else}
 					<!-- An untagged file has no artwork of its own. A music note keeps the row aligned
 					     with its neighbours and says so plainly. -->
 					<div
-						class="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground/50"
+						class="flex h-10 w-10 shrink-0 items-center justify-center rounded-sm bg-surface-container-highest text-on-surface-variant"
 					>
 						<HugeiconsIcon icon={MusicNote01Icon} class="h-4 w-4" />
 					</div>
@@ -319,7 +319,7 @@
 		</div>
 		<div class="min-w-0 flex-1">
 			<div class="flex min-w-0 items-center gap-2">
-				<span class="min-w-0 truncate text-sm font-medium {active ? 'text-primary' : ''}">
+				<span class="min-w-0 truncate text-title-md {active ? 'text-primary' : ''}">
 					{song.title}
 				</span>
 				{#if song.queued_by}
@@ -330,7 +330,7 @@
 					</span>
 				{/if}
 			</div>
-			<div class="flex min-w-0 items-center gap-1 text-xs text-muted-foreground">
+			<div class="flex min-w-0 items-center gap-1 text-body-sm text-on-surface-variant">
 				{#if columns && song.explicit}
 					<ExplicitIcon class="mr-0.5 h-3.5 w-3.5 shrink-0" />
 				{/if}
@@ -472,7 +472,7 @@
 		{#if compact}
 			<!-- Persistent, not hover-only: a filled heart is state the row has to keep showing. -->
 			<button
-				class="cursor-pointer rounded-md p-1.5 text-muted-foreground hover:bg-accent/20 hover:text-foreground"
+				class="state-layer cursor-pointer rounded-full p-1.5 text-on-surface-variant hover:text-on-surface"
 				aria-label={isLiked(song) ? t('player.remove_from_liked') : t('player.save_to_liked')}
 				aria-pressed={isLiked(song)}
 				onclick={(e) => {
@@ -494,7 +494,7 @@
 			{playlistId}
 			{queueIndex}
 			{inLibraryList}
-			triggerClass="cursor-pointer rounded-md p-1.5 text-muted-foreground hover:bg-accent/20 hover:text-foreground {compact
+			triggerClass="state-layer cursor-pointer rounded-full p-1.5 text-on-surface-variant hover:text-on-surface {compact
 				? ''
 				: 'invisible group-focus-within:visible group-hover:visible'}"
 		/>

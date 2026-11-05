@@ -36,7 +36,7 @@
 		<Dialog.Description>{description}</Dialog.Description>
 	</Dialog.Header>
 	<Dialog.Content
-		class={cn("rounded-4xl! p-0 mt-[33vh] mb-auto overflow-hidden p-0", className)}
+		class={cn("rounded-xl p-0 gap-0 mt-[20vh] mb-auto overflow-hidden", className)}
 		{showCloseButton}
 		{portalProps}
 		{...contentProps}

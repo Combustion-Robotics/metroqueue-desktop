@@ -404,7 +404,8 @@
                         {@attach toBody}
                     ></button>
                     <div
-                        class="fixed z-50 min-w-48 animate-in rounded-lg border bg-popover p-1 text-popover-foreground shadow-xl duration-150 fade-in-0 zoom-in-95"
+                        data-slot="menu"
+                        class="fixed z-50 min-w-48 animate-in fade-in-0 zoom-in-90"
                         style={anchor.style}
                         {@attach toBody}
                         {@attach fitMenu(anchor)}
