@@ -149,7 +149,9 @@ export function initShortcuts(mini = false) {
 	// themselves). Tab hands focus back to the keyboard until the next click, so the app can still be
 	// walked with a ring.
 	let pointer = true;
-	const onPointer = () => (pointer = true);
+	let down = false;
+	const onPointer = () => (pointer = down = true);
+	const onRelease = () => (down = false);
 	const onTab = (e: KeyboardEvent) => {
 		if (e.key === 'Tab') pointer = false;
 	};
@@ -160,15 +162,23 @@ export function initShortcuts(mini = false) {
 		// On the next tick, not here: WebKit and Chromium count focus moved inside a focus handler
 		// as a blocked focus change and swallow the mousedown that caused it, so no drag could start
 		// on a track row, a queue row or a card. Unless focus has already gone somewhere else.
-		setTimeout(() => document.activeElement === t && t.blur());
+		const drop = () => setTimeout(() => document.activeElement === t && t.blur());
+		// And after the press, not during it: Chromium (WebView2) ends :active on blur, which cut a
+		// button's press shape morph short.
+		if (!down) return drop();
+		for (const ev of ['pointerup', 'pointercancel']) window.addEventListener(ev, drop, { once: true, capture: true });
 	};
 	window.addEventListener('keydown', onKey);
 	window.addEventListener('pointerdown', onPointer, true);
+	window.addEventListener('pointerup', onRelease, true);
+	window.addEventListener('pointercancel', onRelease, true);
 	window.addEventListener('keydown', onTab, true);
 	window.addEventListener('focusin', onFocus);
 	return () => {
 		window.removeEventListener('keydown', onKey);
 		window.removeEventListener('pointerdown', onPointer, true);
+		window.removeEventListener('pointerup', onRelease, true);
+		window.removeEventListener('pointercancel', onRelease, true);
 		window.removeEventListener('keydown', onTab, true);
 		window.removeEventListener('focusin', onFocus);
 	};
