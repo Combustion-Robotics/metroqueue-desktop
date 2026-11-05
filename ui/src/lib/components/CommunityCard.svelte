@@ -113,7 +113,7 @@
 <div
 	bind:this={root}
 	data-ctx
-	class="group relative flex h-full min-w-0 flex-col gap-2 rounded-2xl bg-foreground/5 p-2.5 transition-colors hover:bg-foreground/10"
+	class="group relative flex h-full min-w-0 flex-col gap-2 rounded-xl bg-surface-container p-2.5 group-state-layer"
 >
 	<ItemMenu
 		{item}
@@ -173,7 +173,7 @@
 		{#if tracks.length}
 			{#each tracks as t, i (t.video_id + ':' + i)}
 				<button
-					class="flex w-full min-w-0 cursor-pointer items-center gap-2 rounded-lg p-1 text-left transition-colors hover:bg-accent/10"
+					class="flex w-full min-w-0 cursor-pointer items-center gap-2 rounded-md p-1 text-left state-layer"
 					onclick={() => playFrom(item, pl!.items, i, item.id, undefined, pl!.continuation)}
 					title={t.artists ? `${t.title} — ${t.artists}` : t.title}
 				>
@@ -221,7 +221,7 @@
 			aria-label={t('a11y.play')}
 			disabled={busy}
 			class:animate-pulse={busy}
-			class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md transition hover:brightness-110"
+			class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-primary text-on-primary state-layer"
 			onclick={() => act((p) => playFrom(item, p.items, null, item.id, undefined, p.continuation))}
 		>
 			<HugeiconsIcon icon={PlayIcon} class="h-3.5 w-3.5" />
@@ -229,7 +229,7 @@
 		<button
 			aria-label={t('player.add_to_playlist')}
 			disabled={busy}
-			class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border text-foreground transition-colors hover:bg-accent/10"
+			class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-outline-variant text-on-surface-variant state-layer"
 			onclick={() => act((p) => openAddManyToPlaylist(p.items))}
 		>
 			<HugeiconsIcon icon={PlayListAddIcon} class="h-3.5 w-3.5" />

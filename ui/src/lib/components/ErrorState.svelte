@@ -30,7 +30,7 @@
 </script>
 
 <div class="flex items-start gap-3 py-6">
-	<span class="mt-0.5 shrink-0 rounded-full bg-muted p-2 text-muted-foreground">
+	<span class="mt-0.5 shrink-0 rounded-full bg-secondary-container p-2.5 text-on-secondary-container">
 		<!-- altIcon/showAlt, not a ternary: `icon` is read once at mount, and a retry can land on a
 		     different kind of failure than the one that mounted this. -->
 		<HugeiconsIcon
@@ -41,7 +41,7 @@
 		/>
 	</span>
 	<div class="flex min-w-0 flex-col items-start gap-1">
-		<p class="text-sm font-medium">
+		<p class="text-title-sm">
 			{offline ? t('errors.offline_title') : t('errors.generic_title')}
 		</p>
 		<p class="max-w-md break-words text-sm text-muted-foreground">{body}</p>

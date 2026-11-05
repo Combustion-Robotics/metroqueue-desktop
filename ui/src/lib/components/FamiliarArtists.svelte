@@ -126,7 +126,7 @@
 
 {#snippet subButton(a: Familiar)}
 	<button
-		class="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full bg-black/40 backdrop-blur-sm transition-colors hover:bg-black/60 {subs[
+		class="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full bg-black/50 state-layer {subs[
 			a.channelId
 		]
 			? 'text-primary'
@@ -219,7 +219,7 @@
 								showPin={false}
 								vertical
 								iconClass="h-5 w-5"
-								triggerClass="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full bg-black/40 text-white/70 backdrop-blur-sm transition hover:bg-black/60 hover:text-white"
+								triggerClass="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full bg-black/50 text-white/80 state-layer hover:text-white"
 							/>
 						</div>
 					</div>

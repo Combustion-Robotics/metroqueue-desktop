@@ -88,10 +88,10 @@
 					src={thumb(auth.account.thumbnail, 128)}
 					alt=""
 					style="width:3rem;height:3rem;max-width:none"
-					class="shrink-0 rounded-full object-cover shadow-md"
+					class="shrink-0 rounded-full object-cover"
 				/>
 			{/if}
-			<h1 class="truncate font-heading text-4xl font-bold tracking-tight drop-shadow-sm">
+			<h1 class="truncate text-display-sm font-bold">
 				{daypart}{auth.account?.name ? `, ${auth.account.name.split(' ')[0]}` : ''}
 			</h1>
 		</div>
@@ -102,7 +102,7 @@
 				onclick={() => goto('/history')}
 				title={t('nav.history')}
 				aria-label={t('nav.history')}
-				class="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full border border-border text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+				class="state-layer flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full border border-outline-variant text-on-surface-variant"
 			>
 				<HugeiconsIcon icon={HistoryIcon} class="h-5 w-5" />
 			</button>

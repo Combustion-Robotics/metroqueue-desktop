@@ -384,7 +384,7 @@
 			onclick={() => (editing = true)}
 			title={chipRow ? t('home.edit_home') : undefined}
 			aria-label={chipRow ? t('home.edit_home') : undefined}
-			class="-mt-px flex shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-full border border-border py-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground {chipRow
+			class="-mt-px flex shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-full border border-outline-variant py-1.5 text-on-surface-variant state-layer {chipRow
 				? 'px-1.5'
 				: 'pl-3 pr-3.5 text-sm font-medium'}"
 		>
@@ -532,11 +532,11 @@
 		transition:fade={{ duration: 150 }}
 		onclick={() => scroller?.scrollTo({ top: 0, behavior: 'smooth' })}
 		aria-label={t('a11y.back_to_top')}
-		class="fixed right-6 z-10 flex h-11 w-11 cursor-pointer items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition-transform hover:scale-110 {playback.now
+		class="state-layer fixed right-6 z-10 flex h-14 w-14 cursor-pointer items-center justify-center rounded-lg bg-primary-container text-on-primary-container shadow-lg {playback.now
 			? 'bottom-24'
 			: 'bottom-6'}"
 	>
-		<HugeiconsIcon icon={ArrowUpBigIcon} class="h-5 w-5" />
+		<HugeiconsIcon icon={ArrowUpBigIcon} class="h-6 w-6" />
 	</button>
 {/if}
 

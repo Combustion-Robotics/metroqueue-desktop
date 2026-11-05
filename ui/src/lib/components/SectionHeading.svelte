@@ -43,16 +43,16 @@
 	{/if}
 	{#if onMore}
 		<button class="min-w-0 cursor-pointer text-left" onclick={onMore} title="{more} {title}">
-			<h2 class="truncate font-heading text-xl font-bold tracking-tight hover:underline">{title}</h2>
+			<h2 class="truncate text-title-lg font-bold hover:underline">{title}</h2>
 		</button>
 	{:else}
-		<h2 class="min-w-0 truncate font-heading text-xl font-bold tracking-tight">{title}</h2>
+		<h2 class="min-w-0 truncate text-title-lg font-bold">{title}</h2>
 	{/if}
 	<div class="min-w-6 flex-1"></div>
 	{@render children?.()}
 	{#if onMore}
 		<button
-			class="flex shrink-0 cursor-pointer items-center gap-0.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+			class="state-layer -mr-2 flex h-8 shrink-0 cursor-pointer items-center gap-0.5 rounded-full px-3 text-label-lg text-primary"
 			onclick={onMore}
 		>
 			{more}

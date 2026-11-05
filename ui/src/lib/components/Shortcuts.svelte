@@ -104,7 +104,7 @@
 			     end of the grid forever, and a ragged one whenever the last row was short. -->
 			<button
 				onclick={() => (picking = true)}
-				class="flex shrink-0 cursor-pointer items-center gap-1 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+				class="state-layer -mr-2 flex h-8 shrink-0 cursor-pointer items-center gap-1 rounded-full px-3 text-label-lg text-primary"
 			>
 				<HugeiconsIcon icon={Add01Icon} class="h-3.5 w-3.5" />
 				{t('common.add')}
@@ -133,13 +133,13 @@
 			     space by being a single line and an obvious place to drop something. -->
 			<button
 				onclick={() => (picking = true)}
-				class="flex w-full cursor-pointer items-center gap-3 rounded-xl border border-dashed p-4 text-left transition-colors hover:border-foreground/30 hover:bg-accent/5 {before ===
+				class="flex w-full cursor-pointer items-center gap-3 rounded-lg border border-dashed border-outline-variant p-4 text-left state-layer {before ===
 				null
-					? 'border-primary bg-accent/5'
+					? 'border-primary bg-primary/8'
 					: ''}"
 			>
 				<span
-					class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-dashed text-muted-foreground"
+					class="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-dashed border-outline-variant text-on-surface-variant"
 				>
 					<HugeiconsIcon icon={Add01Icon} class="h-5 w-5" />
 				</span>
@@ -162,7 +162,7 @@
 							<div class="absolute -left-1 bottom-0 top-0 z-20 w-0.5 rounded-full bg-primary"></div>
 						{/if}
 						<div
-							class="flex h-16 cursor-pointer items-center gap-3 overflow-hidden rounded-xl bg-foreground/5 text-left transition-colors hover:bg-foreground/10"
+							class="flex h-16 cursor-pointer items-center gap-3 overflow-hidden rounded-lg bg-surface-container text-left state-layer"
 							data-pick-tile
 							role="button"
 							tabindex="0"
@@ -235,13 +235,13 @@
 						</div>
 						<ItemMenu
 							{item}
-							triggerClass="absolute right-7 top-1 z-10 flex h-6 w-6 cursor-pointer items-center justify-center rounded-full text-muted-foreground opacity-0 transition hover:bg-muted hover:text-foreground focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-ring group-hover/pick:opacity-100"
+							triggerClass="absolute right-7 top-1 z-10 flex h-6 w-6 cursor-pointer items-center justify-center rounded-full text-on-surface-variant opacity-0 state-layer transition-opacity focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-ring group-hover/pick:opacity-100"
 						/>
 						<button
 							onclick={() => removePick(item.id)}
 							title={t('home.remove_shortcut')}
 							aria-label={t('home.remove_shortcut')}
-							class="absolute right-1 top-1 z-10 flex h-6 w-6 cursor-pointer items-center justify-center rounded-full text-muted-foreground opacity-0 transition hover:bg-muted hover:text-foreground focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-ring group-hover/pick:opacity-100"
+							class="absolute right-1 top-1 z-10 flex h-6 w-6 cursor-pointer items-center justify-center rounded-full text-on-surface-variant opacity-0 state-layer transition-opacity focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-ring group-hover/pick:opacity-100"
 						>
 							<HugeiconsIcon icon={Cancel01Icon} class="h-3 w-3" />
 						</button>
@@ -252,7 +252,7 @@
 				     so nothing dangles off the last row the rest of the time. -->
 				{#if before === null && picks.length < MAX_PICKS}
 					<div
-						class="flex h-16 items-center justify-center rounded-xl border border-dashed border-primary text-xs font-medium text-primary"
+						class="flex h-16 items-center justify-center rounded-lg border border-dashed border-primary text-label-md text-primary"
 					>
 						{t('home.add_to_end')}
 					</div>

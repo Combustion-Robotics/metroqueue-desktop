@@ -159,11 +159,11 @@
 		     corner would poke out past the window's round one. -->
 		<DialogPrimitive.Content
 			onInteractOutside={(e) => onWindowChrome(e) && e.preventDefault()}
-			class="fixed bottom-3 right-3 top-12 z-50 flex w-[25rem] max-w-[calc(100%-1.5rem)] flex-col overflow-hidden rounded-2xl border bg-popover text-popover-foreground shadow-2xl outline-none duration-200 data-open:animate-in data-open:fade-in-0 data-open:slide-in-from-right-8 data-closed:animate-out data-closed:fade-out-0 data-closed:slide-out-to-right-8"
+			class="fixed bottom-3 right-3 top-12 z-50 flex w-[25rem] max-w-[calc(100%-1.5rem)] flex-col overflow-hidden rounded-xl bg-surface-container-low text-on-surface shadow-lg outline-none duration-200 data-open:animate-in data-open:fade-in-0 data-open:slide-in-from-right-8 data-closed:animate-out data-closed:fade-out-0 data-closed:slide-out-to-right-8"
 		>
 			<div class="flex items-start gap-3 border-b px-5 py-4">
 				<span
-					class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"
+					class="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-secondary-container text-on-secondary-container"
 				>
 					<HugeiconsIcon icon={DashboardSquareEditIcon} class="h-5 w-5" />
 				</span>
@@ -190,10 +190,10 @@
 				class="min-h-0 flex-1 overflow-y-auto px-5 py-5"
 				{@attach (node) => dragScroll(node, SECTION_ROW_MIME)}
 			>
-				<h3 class="mb-2 px-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+				<h3 class="mb-2 px-1 text-label-lg text-primary">
 					{t('home.look')}
 				</h3>
-				<div class="mb-7 divide-y divide-border/60 overflow-hidden rounded-xl border bg-card">
+				<div data-settings-card class="mb-7 flex flex-col gap-0.5 overflow-hidden rounded-xl">
 					<div class="px-4 py-3.5">
 						<div class="text-sm font-medium">{t('home.card_size')}</div>
 						<p class="mt-1 text-xs leading-relaxed text-muted-foreground">{t('home.card_size_desc')}</p>
@@ -234,7 +234,7 @@
 				</div>
 
 				<div class="mb-2 flex items-baseline justify-between gap-3 px-1">
-					<h3 class="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+					<h3 class="text-label-lg text-primary">
 						{t('home.sections')}
 					</h3>
 					<div class="flex items-baseline gap-3">
@@ -253,7 +253,7 @@
 				<div
 					bind:this={list}
 					role="list"
-					class="divide-y divide-border/60 overflow-hidden rounded-xl border bg-card"
+					data-settings-card class="flex flex-col gap-0.5 overflow-hidden rounded-xl"
 				>
 					{#each rows as row, i (row.key)}
 						<!-- The whole row is the drag source, not just the grip: aiming at a small handle inside

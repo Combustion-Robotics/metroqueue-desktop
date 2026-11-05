@@ -54,7 +54,7 @@
 		{#each items as item (item.id)}
 			{@const round = item.kind === 'artist'}
 			<div
-				class="group/row flex break-inside-avoid cursor-pointer items-center gap-3 rounded-lg p-1.5 text-left transition-colors hover:bg-accent/10"
+				class="group/row flex break-inside-avoid cursor-pointer items-center gap-3 rounded-md p-1.5 text-left state-layer"
 				data-ctx
 				role="button"
 				tabindex="0"
@@ -122,7 +122,7 @@
 				/>
 				{#if !round}
 					<button
-						class="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full bg-primary text-primary-foreground opacity-0 shadow-md transition-opacity hover:brightness-110 focus-visible:opacity-100 group-hover/row:opacity-100"
+						class="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full bg-primary text-on-primary opacity-0 state-layer transition-opacity focus-visible:opacity-100 group-hover/row:opacity-100"
 						class:animate-pulse={busy === item.id}
 						disabled={busy === item.id}
 						aria-label={t('a11y.play_item', { title: item.title })}

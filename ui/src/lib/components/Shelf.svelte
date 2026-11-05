@@ -180,9 +180,9 @@
 			{#if songs.length}
 				<button
 					onclick={playAll}
-					class="flex shrink-0 cursor-pointer items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary transition-colors hover:bg-primary/20"
+					class="state-layer flex h-8 shrink-0 cursor-pointer items-center gap-1.5 rounded-full bg-secondary-container pl-2.5 pr-3 text-label-lg text-on-secondary-container"
 				>
-					<HugeiconsIcon icon={PlayIcon} class="h-3.5 w-3.5" />
+					<HugeiconsIcon icon={PlayIcon} class="h-4 w-4" />
 					{t('common.play_all')}
 				</button>
 			{/if}
@@ -260,7 +260,7 @@
 			<button
 				aria-label={t('a11y.scroll_left')}
 				onclick={() => page(-1)}
-				class="absolute left-1 top-1/2 flex h-9 w-9 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border bg-background text-foreground opacity-0 shadow-lg transition hover:scale-105 focus-visible:opacity-100 group-hover/shelf:opacity-100"
+				class="absolute left-1 top-1/2 flex h-10 w-10 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-surface-container-highest text-on-surface opacity-0 shadow-md state-layer transition-opacity focus-visible:opacity-100 group-hover/shelf:opacity-100"
 			>
 				<HugeiconsIcon icon={ArrowLeft01Icon} class="h-4 w-4" />
 			</button>
@@ -272,7 +272,7 @@
 			<button
 				aria-label={t('a11y.scroll_right')}
 				onclick={() => page(1)}
-				class="absolute right-1 top-1/2 flex h-9 w-9 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border bg-background text-foreground opacity-0 shadow-lg transition hover:scale-105 focus-visible:opacity-100 group-hover/shelf:opacity-100"
+				class="absolute right-1 top-1/2 flex h-10 w-10 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-surface-container-highest text-on-surface opacity-0 shadow-md state-layer transition-opacity focus-visible:opacity-100 group-hover/shelf:opacity-100"
 			>
 				<HugeiconsIcon icon={ArrowRight01Icon} class="h-4 w-4" />
 			</button>
