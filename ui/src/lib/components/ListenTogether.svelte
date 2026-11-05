@@ -3,6 +3,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import { LoadingIndicator } from '$lib/components/ui/loading-indicator';
+	import { SegmentedButton, SegmentedButtonItem } from '$lib/components/ui/segmented-button';
 	import { HugeiconsIcon } from '@hugeicons/svelte';
 	import {
 		Copy01Icon,
@@ -185,22 +186,14 @@
 		{:else if !inRoom}
 			<!-- Setup: join with a code, or open a room of your own. -->
 			<div class="flex min-w-0 flex-col gap-5 pt-5">
-				<div class="flex rounded-full bg-muted p-1 text-sm">
-					<button
-						class="flex-1 cursor-pointer rounded-full py-1.5 font-medium transition-colors {mode ===
-						'join'
-							? 'bg-background text-foreground shadow-sm'
-							: 'text-muted-foreground hover:text-foreground'}"
-						onclick={() => (mode = 'join')}>{t('dialogs.listen_together.join_tab')}</button
+				<SegmentedButton class="w-full">
+					<SegmentedButtonItem class="flex-1" selected={mode === 'join'} onclick={() => (mode = 'join')}
+						>{t('dialogs.listen_together.join_tab')}</SegmentedButtonItem
 					>
-					<button
-						class="flex-1 cursor-pointer rounded-full py-1.5 font-medium transition-colors {mode ===
-						'host'
-							? 'bg-background text-foreground shadow-sm'
-							: 'text-muted-foreground hover:text-foreground'}"
-						onclick={() => (mode = 'host')}>{t('dialogs.listen_together.host_tab')}</button
+					<SegmentedButtonItem class="flex-1" selected={mode === 'host'} onclick={() => (mode = 'host')}
+						>{t('dialogs.listen_together.host_tab')}</SegmentedButtonItem
 					>
-				</div>
+				</SegmentedButton>
 
 				<!-- Both paths need a name, so it is asked once, above the split. -->
 				<div class="flex flex-col gap-1.5">
@@ -239,7 +232,7 @@
 					</form>
 				{:else}
 					<form class="flex flex-col gap-5" onsubmit={host}>
-						<div class="flex gap-3 rounded-2xl border bg-muted/40 p-3.5">
+						<div class="flex gap-3 rounded-lg bg-surface-container p-3.5">
 							<HugeiconsIcon icon={PlusSignIcon} class="mt-0.5 h-4 w-4 shrink-0 text-primary" />
 							<p class="text-xs leading-relaxed text-muted-foreground">
 								{t('dialogs.listen_together.host_blurb')}
@@ -261,7 +254,7 @@
 								<HugeiconsIcon icon={ServerStack01Icon} class="h-3.5 w-3.5" />
 								{t('dialogs.listen_together.change_server')}
 								{#if onCustomServer}
-									<span class="rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] text-primary">
+									<span class="rounded-sm bg-secondary-container px-1.5 py-0.5 text-label-sm text-on-secondary-container">
 										{t('dialogs.listen_together.custom_server')}
 									</span>
 								{/if}
@@ -298,15 +291,15 @@
 			<!-- In a room. -->
 			<div class="flex min-w-0 flex-col gap-4 pt-5">
 				<!-- The invite, which is the only thing a host has to act on. -->
-				<div class="rounded-2xl border bg-muted/40 p-4 text-center">
+				<div class="rounded-xl bg-surface-container p-4 text-center">
 					<div
 						class="flex items-center justify-center gap-1.5 text-xs font-medium text-muted-foreground"
 					>
 						<span
 							class="h-1.5 w-1.5 rounded-full {lt.status === 'connected'
-								? 'bg-green-500'
+								? 'bg-primary'
 								: lt.status === 'connecting'
-									? 'animate-pulse bg-amber-500'
+									? 'animate-pulse bg-tertiary'
 									: 'bg-muted-foreground/40'}"
 						></span>
 						{statusLabel} · {isHost
@@ -361,14 +354,14 @@
 					<!-- Host: pending join requests -->
 					{#if isHost && lt.pendingJoins.length}
 						<div>
-							<div class="mb-2 text-xs font-medium text-muted-foreground">
+							<div class="mb-2 text-label-lg text-primary">
 								{t('dialogs.listen_together.join_requests')}
 							</div>
 							<div class="flex flex-col gap-2">
 								{#each lt.pendingJoins as p (p.userId)}
-									<div class="flex min-w-0 items-center gap-2.5 rounded-xl border bg-muted/40 p-2">
+									<div class="flex min-w-0 items-center gap-2.5 rounded-lg bg-surface-container p-2">
 										<span
-											class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary"
+											class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary-container text-xs font-semibold text-on-primary-container"
 										>
 											{initial(p.username)}
 										</span>
@@ -387,7 +380,7 @@
 
 					<!-- Participants -->
 					<div>
-						<div class="mb-2 text-xs font-medium text-muted-foreground">
+						<div class="mb-2 text-label-lg text-primary">
 							{t('dialogs.listen_together.in_room', { count: lt.users.length })}
 						</div>
 						<div class="flex flex-col gap-0.5">
@@ -396,14 +389,14 @@
 									<span class="relative shrink-0">
 										<span
 											class="flex h-7 w-7 items-center justify-center rounded-full text-xs font-semibold {u.is_host
-												? 'bg-primary/10 text-primary'
-												: 'bg-muted text-muted-foreground'} {u.is_connected ? '' : 'opacity-40'}"
+												? 'bg-primary-container text-on-primary-container'
+												: 'bg-surface-container-highest text-on-surface-variant'} {u.is_connected ? '' : 'opacity-40'}"
 										>
 											{initial(u.username)}
 										</span>
 										<span
 											class="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-popover {u.is_connected
-												? 'bg-green-500'
+												? 'bg-primary'
 												: 'bg-muted-foreground/40'}"
 											title={u.is_connected
 												? t('dialogs.listen_together.connected')
@@ -416,19 +409,19 @@
 											: ''}
 									</span>
 									{#if u.is_host}
-										<HugeiconsIcon icon={CrownIcon} class="h-3.5 w-3.5 shrink-0 text-amber-500" />
+										<HugeiconsIcon icon={CrownIcon} class="h-3.5 w-3.5 shrink-0 text-tertiary" />
 									{/if}
 									{#if isHost && u.user_id !== lt.myId}
 										<!-- Revealed on hover, but always in the tab order and always named. -->
 										<button
-											class="shrink-0 cursor-pointer rounded-md p-1 text-muted-foreground opacity-0 transition hover:bg-muted hover:text-foreground focus-visible:opacity-100 group-hover:opacity-100"
+											class="shrink-0 cursor-pointer rounded-full p-1 text-on-surface-variant opacity-0 state-layer transition-opacity focus-visible:opacity-100 group-hover:opacity-100"
 											onclick={() => api.ltTransferHost(u.user_id)}
 										>
 											<HugeiconsIcon icon={Exchange01Icon} class="h-4 w-4" />
 											<span class="sr-only">{t('dialogs.listen_together.make_host')}</span>
 										</button>
 										<button
-											class="shrink-0 cursor-pointer rounded-md p-1 text-muted-foreground opacity-0 transition hover:bg-muted hover:text-destructive focus-visible:opacity-100 group-hover:opacity-100"
+											class="shrink-0 cursor-pointer rounded-full p-1 text-on-surface-variant opacity-0 state-layer transition-opacity hover:text-error focus-visible:opacity-100 group-hover:opacity-100"
 											onclick={() => api.ltKick(u.user_id)}
 										>
 											<HugeiconsIcon icon={UserRemove01Icon} class="h-4 w-4" />
@@ -448,12 +441,12 @@
 					<!-- Host: suggestions from guests -->
 					{#if isHost && lt.suggestions.length}
 						<div>
-							<div class="mb-2 text-xs font-medium text-muted-foreground">
+							<div class="mb-2 text-label-lg text-primary">
 								{t('dialogs.listen_together.suggestions')}
 							</div>
 							<div class="flex flex-col gap-2">
 								{#each lt.suggestions as s (s.id)}
-									<div class="flex min-w-0 items-center gap-2.5 rounded-xl border bg-muted/40 p-2">
+									<div class="flex min-w-0 items-center gap-2.5 rounded-lg bg-surface-container p-2">
 										<div class="min-w-0 flex-1">
 											<div class="truncate text-sm">{s.track.title}</div>
 											<div class="truncate text-xs text-muted-foreground">

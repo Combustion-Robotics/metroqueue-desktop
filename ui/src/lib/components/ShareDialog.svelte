@@ -238,7 +238,7 @@
 			{/if}
 
 			{#if privacy === 'PRIVATE'}
-				<div class="mt-3 flex items-start gap-2 text-xs text-amber-600 dark:text-amber-500">
+				<div class="mt-3 flex items-start gap-2 text-xs text-tertiary">
 					<HugeiconsIcon icon={Alert02Icon} class="mt-px h-4 w-4 shrink-0" />
 					<p>{t('dialogs.share.private_note')}</p>
 				</div>

@@ -217,9 +217,9 @@
 					<!-- Discord's status dot with a ping behind it: two layers, because animate-ping
 					     scales and fades the element it's on, so a lone dot would blink out. -->
 					<span class="absolute -right-0.5 -top-0.5 h-1.5 w-1.5">
-						<span class="absolute inset-0 animate-ping rounded-full bg-emerald-500 opacity-75"
+						<span class="absolute inset-0 animate-ping rounded-full bg-primary opacity-75"
 						></span>
-						<span class="absolute inset-0 rounded-full bg-emerald-500 ring-[1.5px] ring-background"
+						<span class="absolute inset-0 rounded-full bg-primary ring-[1.5px] ring-sidebar"
 						></span>
 					</span>
 				{/if}
@@ -236,11 +236,11 @@
 		>
 			<span class="relative">
 				<DiscordIcon class="h-4 w-4" />
-				<!-- Presence status dot, Discord-style: green = live, red = off. -->
+				<!-- Presence status dot: primary while live, outline while off. -->
 				<span
-					class="absolute -right-0.5 -top-0.5 h-1.5 w-1.5 rounded-full ring-[1.5px] ring-background {discordOn
-						? 'bg-emerald-500'
-						: 'bg-red-500'}"
+					class="absolute -right-0.5 -top-0.5 h-1.5 w-1.5 rounded-full ring-[1.5px] ring-sidebar {discordOn
+						? 'bg-primary'
+						: 'bg-outline'}"
 				></span>
 			</span>
 		</button>
