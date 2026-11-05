@@ -349,6 +349,11 @@
 	color: var(--md-sys-color-on-secondary-container);
 }
 
+/* On artwork or video, under a dark scrim in either theme: the fixed tone reads there, and the light
+   scheme's dark primary does not. */
+:root .on-art {
+	--primary: var(--md-sys-color-primary-fixed-dim);
+}
 :root .m3-seek.on-art .m3-seek-unplayed {
 	stroke: rgb(255 255 255 / 0.35);
 }

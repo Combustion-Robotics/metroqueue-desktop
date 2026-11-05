@@ -87,9 +87,9 @@
 	// Every plain icon button. Fixed square boxes, flex-centred: left to inline layout, each glyph
 	// sits wherever its own baseline puts it and neighbours don't line up.
 	const artBtn =
-		'flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-md text-white/70 transition hover:bg-white/15 hover:text-white';
+		'state-layer flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-full text-white/70 transition-colors hover:text-white';
 	const panelBtn =
-		'flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-md transition-colors hover:bg-muted';
+		'state-layer flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-full';
 
 	// Volume: the slider is revealed by hovering the control, and stays out for as long as it is
 	// being dragged. Hover alone can't say the second part — the strip is 24px tall, so a pointer
@@ -131,7 +131,7 @@
      (the compositor can't round an undecorated window for us — same trick as the main window). -->
 <div
 	data-tauri-drag-region="deep"
-	class="group relative flex h-screen w-screen select-none overflow-hidden rounded-2xl border border-border/60 bg-card text-foreground"
+	class="group relative flex h-screen w-screen select-none overflow-hidden rounded-xl border border-outline-variant/60 bg-surface-container text-on-surface"
 >
 	{#if compact}
 		<!-- Compact: what's playing and the transport, nothing else. The cover runs edge to edge on the
@@ -158,7 +158,7 @@
 		{/key}
 
 		<button
-			class="absolute right-1.5 top-1.5 z-10 flex size-6 cursor-pointer items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+			class="absolute right-1.5 top-1.5 z-10 flex size-6 cursor-pointer items-center justify-center rounded-full text-on-surface-variant state-layer"
 			onclick={() => setCompact(false)}
 			title={t('player.mini_expand')}
 			aria-label={t('player.mini_expand')}
@@ -171,7 +171,7 @@
 			     its box with clientWidth, which counts padding as room to spare. -->
 			<Marquee
 				text={now?.title ?? t('player.not_playing')}
-				class="mr-6 font-heading text-sm font-semibold leading-tight"
+				class="mr-6 text-title-sm leading-tight"
 			/>
 			<Marquee text={now?.artists ?? ''} class="text-xs leading-snug text-muted-foreground" />
 			<div class="mt-1 flex items-center gap-1">
@@ -179,7 +179,7 @@
 					<HugeiconsIcon icon={PreviousIcon} class="h-4 w-4" />
 				</button>
 				<button
-					class="flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-full bg-primary text-primary-foreground transition-colors hover:bg-primary/80"
+					class="flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-full bg-primary text-on-primary state-layer"
 					onclick={() => api.togglePause()}
 					aria-label={playback.paused ? t('player.play') : t('player.pause')}
 				>
@@ -252,7 +252,7 @@
 		     window, so its reply lands nowhere — the rejection is swallowed rather than left dangling.
 		     Compact has no shade over its cover, so the button brings its own. -->
 		<button
-			class="absolute left-2 top-2 z-10 flex size-6 cursor-pointer items-center justify-center rounded-md text-white/60 opacity-0 transition hover:bg-white/15 hover:text-white focus-visible:opacity-100 group-hover:opacity-100 {compact
+			class="absolute left-2 top-2 z-10 flex size-6 cursor-pointer items-center justify-center rounded-full text-white/60 opacity-0 state-layer transition-opacity hover:text-white focus-visible:opacity-100 group-hover:opacity-100 {compact
 				? 'bg-black/40'
 				: ''}"
 			onclick={() => api.closeMini().catch(() => {})}
@@ -263,7 +263,7 @@
 		</button>
 
 		<!-- Left: what's playing, over the art. -->
-		<div class="relative flex min-w-0 flex-1 flex-col justify-between p-3.5 pl-4">
+		<div class="on-art relative flex min-w-0 flex-1 flex-col justify-between p-3.5 pl-4">
 			<div class="flex items-center justify-end gap-0.5">
 				<!-- Volume. The slider sits *in flow* to the left of its icon and grows from zero width:
 				     the row is right-aligned, so it expands into the empty space on its left and the
@@ -354,7 +354,7 @@
 			<div class="min-w-0 [text-shadow:0_1px_4px_rgb(0_0_0/0.7)]">
 				<Marquee
 					text={now?.title ?? t('player.not_playing')}
-					class="font-heading text-[0.95rem] font-semibold leading-tight text-white"
+					class="text-title-md font-semibold leading-tight text-white"
 				/>
 				<Marquee text={now?.artists ?? ''} class="text-xs leading-snug text-white/75" />
 			</div>
@@ -412,7 +412,7 @@
 			>
 				{#each upcoming as { item, index } (item.video_id + index)}
 					<button
-						class="flex shrink-0 cursor-pointer items-center gap-2 rounded-md px-1.5 py-0.5 text-left transition-colors hover:bg-muted"
+						class="flex shrink-0 cursor-pointer items-center gap-2 rounded-sm px-1.5 py-0.5 text-left state-layer"
 						onclick={() => api.playIndex(index)}
 						title={item.title}
 					>
@@ -461,7 +461,7 @@
 					</button>
 				{/if}
 				<button
-					class="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-full bg-primary text-primary-foreground transition-colors hover:bg-primary/80"
+					class="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-full bg-primary text-on-primary state-layer"
 					onclick={() => api.togglePause()}
 					aria-label={playback.paused ? t('player.play') : t('player.pause')}
 				>
