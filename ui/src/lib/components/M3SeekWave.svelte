@@ -1,6 +1,4 @@
 <script lang="ts">
-	import { theme } from '$lib/theme.svelte';
-
 	let {
 		pct,
 		paused,
@@ -92,7 +90,6 @@
 	}
 
 	$effect(() => {
-		if (theme.id !== 'material') return;
 		const nextPct = pct;
 		curPlaying = !paused;
 		curDuration = duration;
@@ -110,7 +107,7 @@
 	const GAP = 1000 / 24;
 
 	$effect(() => {
-		if (theme.id !== 'material' || !svgEl || !pathEl) return;
+		if (!svgEl || !pathEl) return;
 		const svg = svgEl;
 		let raf = 0;
 		let timer: ReturnType<typeof setTimeout> | undefined;
@@ -190,34 +187,32 @@
 	});
 </script>
 
-{#if theme.id === 'material'}
-	<svg
-		bind:this={svgEl}
-		class="m3-seek-svg pointer-events-none absolute inset-0 h-full w-full overflow-visible"
-		aria-hidden="true"
-	>
-		<line
-			bind:this={unplayedEl}
-			class="m3-seek-unplayed"
-			stroke="var(--secondary)"
-			stroke-width={strokeWidth}
-			stroke-linecap="round"
-			visibility="hidden"
-		/>
-		<path
-			bind:this={pathEl}
-			fill="none"
-			stroke="var(--primary)"
-			stroke-width={strokeWidth}
-			stroke-linecap="round"
-			stroke-linejoin="round"
-		/>
-		<line
-			bind:this={thumbEl}
-			class="m3-seek-thumb"
-			stroke="var(--primary)"
-			stroke-width={thumbWidth}
-			stroke-linecap="round"
-		/>
-	</svg>
-{/if}
+<svg
+	bind:this={svgEl}
+	class="m3-seek-svg pointer-events-none absolute inset-0 h-full w-full overflow-visible"
+	aria-hidden="true"
+>
+	<line
+		bind:this={unplayedEl}
+		class="m3-seek-unplayed"
+		stroke="var(--secondary)"
+		stroke-width={strokeWidth}
+		stroke-linecap="round"
+		visibility="hidden"
+	/>
+	<path
+		bind:this={pathEl}
+		fill="none"
+		stroke="var(--primary)"
+		stroke-width={strokeWidth}
+		stroke-linecap="round"
+		stroke-linejoin="round"
+	/>
+	<line
+		bind:this={thumbEl}
+		class="m3-seek-thumb"
+		stroke="var(--primary)"
+		stroke-width={thumbWidth}
+		stroke-linecap="round"
+	/>
+</svg>

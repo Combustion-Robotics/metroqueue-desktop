@@ -18,7 +18,6 @@ mod listenbrainz;
 mod listentogether;
 mod local;
 mod lyrics;
-mod matugen;
 mod media;
 mod metroqueue;
 mod mini;
@@ -1198,9 +1197,6 @@ pub fn run() {
             commands::forget_video_stream,
             commands::native_video_rect,
             commands::ambient_frame,
-            commands::get_matugen_theme,
-            commands::start_matugen_watcher,
-            commands::stop_matugen_watcher,
             commands::get_settings,
             commands::set_setting,
             commands::get_global_hotkeys,
@@ -1257,7 +1253,6 @@ pub fn run() {
             commands::get_local_library,
             commands::add_local_folder,
             commands::remove_local_folder,
-            commands::allow_font_file,
             commands::get_artist,
             commands::get_artist_appears_on,
             commands::get_browse_grid,

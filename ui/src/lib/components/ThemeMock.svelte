@@ -1,31 +1,27 @@
 <script lang="ts">
-	// A miniature of the app (sidebar, a shelf of cards, the player bar) in one palette. It carries
-	// `theme-<id>` and `dark` itself, so every token re-resolves for this subtree alone, and the
-	// overrides land as inline vars here the way `apply` puts them on <html>. That is what lets the
-	// Appearance tab follow a slider live: dragging restyles a few dozen elements instead of the
-	// whole document (docs/UI-PERFORMANCE.md, "Per-track and per-tick writes land on a leaf").
+	// A miniature of the app (sidebar, a shelf of cards, the player bar) in a given M3 scheme. It
+	// carries the scheme's --md-sys-color-* inline and the `m3-scheme` class, so every token
+	// re-resolves for this subtree alone. That is what lets the Appearance tab follow the colour
+	// picker live: a drag restyles a few dozen elements instead of the whole document
+	// (docs/UI-PERFORMANCE.md, "Per-track and per-tick writes land on a leaf").
 	//
 	// Sized in em off the root's font-size. Radii are scaled by --k: a real corner on a card this
 	// small would read as a pill.
-	import { m3Seed, onAccent, type Custom, type ThemeId } from '$lib/theme.svelte';
-
-	type Overrides = Pick<Custom, 'accent' | 'hue' | 'radius' | 'fontSans' | 'fontHeading'>;
+	import { declarations, schemeVars } from '$lib/m3';
 
 	let {
-		id,
+		seed,
 		dark,
-		overrides,
+		pureBlack,
 		detail
 	}: {
-		id: ThemeId;
+		seed: string;
 		dark: boolean;
-		overrides: Overrides;
+		pureBlack: boolean;
 		detail: { heading: string; title: string; artist: string; play: string; cover?: string };
 	} = $props();
 
-	const isM3 = $derived(id === 'material');
-	const fg = $derived(!isM3 && overrides.accent ? onAccent(overrides.accent) : null);
-	const seed = $derived(isM3 ? m3Seed(overrides.accent) : null);
+	const style = $derived(declarations(schemeVars(seed, dark, pureBlack)));
 	let coverFailed = $state(false);
 	$effect(() => {
 		void detail.cover;
@@ -33,20 +29,7 @@
 	});
 </script>
 
-<div
-	class="mock theme-{id} {dark ? 'dark' : ''}"
-	style:--primary={isM3 ? null : overrides.accent}
-	style:--primary-foreground={fg}
-	style:--accent={isM3 ? null : overrides.accent}
-	style:--accent-foreground={fg}
-	style:--m3-seed-h={seed ? seed.h : null}
-	style:--m3-c={seed ? seed.c : null}
-	style:--hue={overrides.hue !== null ? String(overrides.hue) : seed ? seed.h : null}
-	style:--radius={overrides.radius === null ? null : `${overrides.radius}rem`}
-	style:--font-sans={overrides.fontSans}
-	style:--font-heading={overrides.fontHeading}
-	aria-hidden="true"
->
+<div class="mock m3-scheme" {style} aria-hidden="true">
 	<div class="body">
 		<div class="side">
 			<i class="logo"></i>
@@ -86,7 +69,7 @@
 </div>
 
 <style>
-	/* Every colour is a token, so the miniature is whatever palette its classes resolve to. */
+	/* Every colour is a token, so the miniature is whatever scheme it carries. */
 	.mock {
 		--k: 0.7;
 		display: flex;
@@ -107,6 +90,7 @@
 		display: flex;
 		flex: 1;
 		min-height: 0;
+		background: var(--sidebar);
 	}
 	.side {
 		display: flex;
@@ -114,8 +98,6 @@
 		flex-direction: column;
 		gap: 0.7em;
 		padding: 1em 0.9em;
-		background: var(--sidebar);
-		border-right: 1px solid var(--sidebar-border);
 	}
 	.logo {
 		width: 1.4em;
@@ -126,14 +108,14 @@
 	}
 	.nav {
 		height: 0.7em;
-		border-radius: calc(var(--radius) * var(--k));
+		border-radius: 999px;
 		background: var(--muted-foreground);
 		opacity: 0.35;
 	}
 	.nav.on {
 		height: 1.4em;
 		opacity: 1;
-		background: var(--sidebar-accent);
+		background: var(--secondary);
 	}
 	.nav.short {
 		width: 65%;
@@ -146,6 +128,8 @@
 		gap: 0.9em;
 		overflow: hidden;
 		padding: 1.1em 1.2em;
+		background: var(--background);
+		border-top-left-radius: calc(var(--radius) * 1.25);
 	}
 	.main > * {
 		flex-shrink: 0;
@@ -169,7 +153,6 @@
 		flex-direction: column;
 		gap: 0.5em;
 		padding: 0.6em;
-		border: 1px solid var(--border);
 		border-radius: calc(var(--radius) * var(--k) * 1.4);
 		background: var(--card);
 	}
@@ -191,7 +174,7 @@
 	.pill {
 		align-self: flex-start;
 		padding: 0.35em 1em;
-		border-radius: calc(var(--radius) * 2.6 * var(--k));
+		border-radius: 999px;
 		background: var(--primary);
 		color: var(--primary-foreground);
 		font-size: 0.95em;
@@ -202,7 +185,7 @@
 		align-items: center;
 		gap: 1em;
 		padding: 0.8em 1.2em;
-		border-top: 1px solid var(--border);
+		border-radius: calc(var(--radius) * 1.1) calc(var(--radius) * 1.1) 0 0;
 		background: var(--card);
 	}
 	.cover {
@@ -234,57 +217,13 @@
 		font-size: 0.85em;
 		color: var(--muted-foreground);
 	}
+	/* The wavy M3 progress, as the player bar draws it. */
 	.track {
-		flex: 1;
-		height: 0.45em;
-		overflow: hidden;
-		border-radius: 999px;
-		background: var(--muted);
-	}
-	.fill {
-		width: 38%;
-		height: 100%;
-		background: var(--primary);
-	}
-	.play {
-		width: 2.2em;
-		height: 2.2em;
-		flex-shrink: 0;
-		border-radius: 999px;
-		background: var(--primary);
-	}
-	.mock.theme-material .body {
-		background: var(--sidebar);
-	}
-	.mock.theme-material .side {
-		border-right-color: transparent;
-	}
-	.mock.theme-material .main {
-		background: var(--background);
-		border-top-left-radius: calc(var(--radius) * 1.25);
-	}
-	.mock.theme-material .nav {
-		border-radius: 999px;
-	}
-	.mock.theme-material .nav.on {
-		background: var(--secondary);
-	}
-	.mock.theme-material .card {
-		border-color: transparent;
-		background: var(--card);
-	}
-	.mock.theme-material .bar {
-		border-top-color: transparent;
-		border-radius: calc(var(--radius) * 1.1) calc(var(--radius) * 1.1) 0 0;
-		background: var(--card);
-	}
-	.mock.theme-material .track {
 		position: relative;
+		flex: 1;
 		height: 0.7em;
-		overflow: visible;
-		background: transparent;
 	}
-	.mock.theme-material .track::after {
+	.track::after {
 		content: '';
 		position: absolute;
 		left: calc(38% + 0.35em);
@@ -295,7 +234,7 @@
 		border-radius: 999px;
 		background: var(--secondary);
 	}
-	.mock.theme-material .fill {
+	.fill {
 		position: relative;
 		width: calc(38% - 0.25em);
 		height: 100%;
@@ -307,7 +246,7 @@
 		mask-size: 100% 100%;
 		mask-repeat: no-repeat;
 	}
-	.mock.theme-material .track::before {
+	.track::before {
 		content: '';
 		position: absolute;
 		left: 38%;
@@ -319,7 +258,11 @@
 		background: var(--primary);
 		z-index: 1;
 	}
-	.mock.theme-material .play {
+	.play {
+		width: 2.2em;
+		height: 2.2em;
+		flex-shrink: 0;
 		border-radius: calc(var(--radius) * var(--k) * 1.1);
+		background: var(--primary);
 	}
 </style>

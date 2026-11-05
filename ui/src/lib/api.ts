@@ -487,9 +487,6 @@ export const setAppIcon = (path: string | null) => invoke<void>('set_app_icon', 
 /** Path to the custom app icon, granted to the asset protocol. `null` when the bundled one is in use. */
 export const appIconPath = () => invoke<string | null>('app_icon_path');
 
-/** Grant the webview a URL for one font file the user picked, so `@font-face` can load it. */
-export const allowFontFile = (path: string) => invoke<void>('allow_font_file', { path });
-
 // --- global hotkeys -------------------------------------------------------------------------
 export interface HotkeysConfig {
 	enabled: boolean;
@@ -1350,8 +1347,6 @@ export const onLtState = (cb: (s: LtState) => void): Promise<UnlistenFn> =>
 export const onLtNotice = (cb: (msg: string) => void): Promise<UnlistenFn> =>
 	listen<string>('lt-notice', (e) => cb(e.payload));
 
-export const getMatugenTheme = () => invoke<string | null>('get_matugen_theme');
-export const onMatugenThemeChanged = (cb: (css: string | null) => void): Promise<UnlistenFn> =>
-	listen<string | null>('matugen-theme-changed', (event) => cb(event.payload));
-export const startMatugenWatcher = () => invoke<void>('start_matugen_watcher');
-export const stopMatugenWatcher = () => invoke<void>('stop_matugen_watcher');
+/** A sync with the phone changed shared settings (mqsync.rs): re-read the ones you show. */
+export const onSharedSettingsChanged = (cb: () => void): Promise<UnlistenFn> =>
+	listen('shared-settings-changed', () => cb());

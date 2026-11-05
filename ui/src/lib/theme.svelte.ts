@@ -1,112 +1,31 @@
-// The theme presets, selected from one picker and persisted to localStorage (a pure UI preference,
-// no backend round-trip). Each is a full token set (background, card, sidebar, radius, …) for light
-// AND dark, defined as a `.theme-<id>` class in layout.css and applied by toggling that class on
-// <html>. 'default' is the exception: its tokens are the :root/.dark block itself, so `theme-default`
-// is on <html> with no rule behind it.
+// The theme: one Material 3 colour scheme (m3.ts) from a seed colour, in light, dark or pure black,
+// and the "looks" the UI reads directly (`appearance`). The seed is the user's colour, or the playing
+// cover's while "Dynamic colour" is on.
 //
-// There used to be a second kind, five accent presets that only overrode --primary/--accent. The
-// Primary Accent picker below does that with every colour instead of five, so they are gone (see
-// LEGACY_ACCENTS for what happens to a stored one).
+// The three colour settings (seed, dynamic, pure black) are shared with the MetroQueue phone app
+// (mqsync.rs, docs/metroqueue/SYNC.md), so their source of truth is the backend's settings table.
+// localStorage keeps a copy only so the first frame paints in the right colours before the
+// `get_settings` round-trip lands.
 //
-// On top of whichever preset is selected sits the *custom* layer (accent colour, background tint,
-// roundness, fonts). It's inline styles too, applied after the preset, so it wins over the class
-// and survives switching presets. Anything the user hasn't touched stays null and the preset shows
-// through — the customization is a set of overrides, not a rival theme to maintain.
+// The scheme is one generated <style> (light on :root, dark on :root.dark), so the light/dark
+// switch stays a CSS class flip and a seed change is a single stylesheet write. Writing it restyles
+// the whole document (docs/UI-PERFORMANCE.md): a cover change is one write, never per frame, and a
+// colour drag in Settings previews on `ThemeMock` instead.
 
-import { convertFileSrc } from '@tauri-apps/api/core';
-import { logUi } from './errlog';
-import { hexToHsv, hexToOklch, isLight } from './color';
-import { artworkAccent, toAccent, warmAccent } from './artcolor';
-import {
-	allowFontFile,
-	getMatugenTheme,
-	onMatugenThemeChanged,
-	startMatugenWatcher,
-	stopMatugenWatcher
-} from './api';
+import { artworkAccent, warmAccent } from './artcolor';
+import { getSettings, onSharedSettingsChanged, setSetting } from './api';
+import { DEFAULT_SEED, argbIntToHex, hexToArgbInt, isHex, schemeSheet } from './m3';
 
-export type ThemeId =
-	| 'default'
-	| 'catppuccin'
-	| 'tokyonight'
-	| 'caffeine'
-	| 'neon'
-	| 'breeze'
-	| 'amoled'
-	| 'material';
-
-// `color` is just the picker swatch.
-type Theme = { id: ThemeId; label: string; color: string };
-
-export const THEMES: Theme[] = [
-	{ id: 'default', label: 'Default', color: 'oklch(0.514 0.222 16.935)' },
-	{ id: 'catppuccin', label: 'Catppuccin', color: 'oklch(0.5547 0.2503 297.0156)' },
-	{ id: 'tokyonight', label: 'Tokyo Night', color: 'oklch(0.3593 0.0513 273.1802)' },
-	{ id: 'caffeine', label: 'Caffeine', color: 'oklch(0.4341 0.0392 41.9938)' },
-	{ id: 'neon', label: 'Neon', color: 'oklch(0.6726 0.2904 341.4084)' },
-	{ id: 'breeze', label: 'Breeze', color: 'oklch(0.7227 0.1920 149.5793)' },
-	{ id: 'amoled', label: 'AMOLED', color: 'oklch(0 0 0)' },
-	{ id: 'material', label: 'Material You', color: 'oklch(0.4955 0.1305 293.7091)' }
-];
-
-// A removed accent preset falls back to the default palette, carrying its colour over as a custom
-// accent so someone who picked Blue stays blue. Rose was the default palette's own colour, so it
-// carries nothing over. Hex, because that is what the custom accent layer stores.
-const LEGACY_ACCENTS: Record<string, string | null> = {
-	rose: null,
-	blue: '#1a4eda',
-	lime: '#85cc23',
-	purple: '#9336ea',
-	teal: '#54e9d2'
-};
-
-/** Font stacks bundled with the app (imported in layout.css). "System" needs no download. */
-export const FONTS: { label: string; value: string }[] = [
-	{ label: 'Oxanium', value: "'Oxanium Variable', sans-serif" },
-	{ label: 'IBM Plex Sans', value: "'IBM Plex Sans Variable', sans-serif" },
-	{ label: 'Montserrat', value: "'Montserrat Variable', sans-serif" },
-	{ label: 'Outfit', value: "'Outfit Variable', sans-serif" },
-	{ label: 'DM Sans', value: "'DM Sans Variable', sans-serif" },
-	{ label: 'Google Sans', value: "'Google Sans Variable', sans-serif" },
-	{ label: 'System', value: 'ui-sans-serif, system-ui, sans-serif' }
-];
-
-/** The custom layer. `null` = untouched, so the selected preset decides. */
-export type Custom = {
-	accent: string | null; // hex
-	hue: number | null; // 0–360, tints the default palette's neutrals
-	radius: number | null; // rem
-	fontSans: string | null; // a CSS font-family value
-	fontHeading: string | null;
-	// Font files the user loaded from disk, by absolute path. Not an override — a small library that
-	// both font rows can then choose from, which is why `resetCustom` leaves it alone.
-	fontFiles: string[];
-};
-
-const KEY = 'primary-theme';
-const CUSTOM_KEY = 'custom-theme';
 const APPEARANCE_KEY = 'appearance';
-const PALETTE_CLASSES = THEMES.map((t) => `theme-${t.id}`);
-/** Set on <html> while the artwork tint is live; the fill rules in layout.css hang off it. */
-const TINT_CLASS = 'art-tint';
-const MATUGEN_STYLE_ID = 'limusic-matugen';
-const ACCENT_VARS = ['--primary', '--primary-foreground', '--accent', '--accent-foreground'];
-const M3_SEED_VARS = ['--m3-seed-h', '--m3-c'];
-const CUSTOM_VARS = ['--hue', '--radius', '--font-sans', '--font-heading'];
-// Same two neutrals the preset accent themes pick between.
-const ON_DARK = 'oklch(0.985 0 0)';
-const ON_LIGHT = 'oklch(0.205 0 0)';
+const M3_KEY = 'm3-theme';
+const STYLE_ID = 'm3-scheme';
+// Backend setting keys, mapped to the phone's in mqsync.rs.
+const SEED_SETTING = 'theme_seed'; // signed ARGB int, like the phone's `selectedThemeColor`
+const DYNAMIC_SETTING = 'theme_dynamic';
+const PURE_BLACK_SETTING = 'theme_pure_black';
 
-/** Reactive current selection, so the picker reflects it. */
-export const theme = $state<{ id: ThemeId }>({ id: 'default' });
-export const custom = $state<Custom>({
-	accent: null,
-	hue: null,
-	radius: null,
-	fontSans: null,
-	fontHeading: null,
-	fontFiles: []
-});
+/** The colour settings. `pureBlack` only changes dark mode, like on the phone. */
+export const m3 = $state({ seed: DEFAULT_SEED, dynamic: false, pureBlack: false });
 
 /** Enhanced lyrics' tuning (#591), what each reset icon in its settings card puts back. */
 export const LYRICS_DEFAULTS = {
@@ -118,9 +37,9 @@ export const LYRICS_DEFAULTS = {
 };
 
 /**
- * Looks the UI reads directly rather than through a CSS token. Same store and same reasoning as
- * the theme above (a pure UI preference, no backend round-trip), which also means a component can
- * read it during its first render instead of flashing the default while a command round-trips.
+ * Looks the UI reads directly rather than through a CSS token. localStorage only (a pure UI
+ * preference, no backend round-trip), which also means a component can read it during its first
+ * render instead of flashing the default while a command round-trips.
  */
 export const appearance = $state({
 	/** Blur the playing track's artwork behind the now-playing view. */
@@ -147,13 +66,9 @@ export const appearance = $state({
 	/** A click on empty player-bar space toggles the now-playing view, and one around the artwork
 	 *  closes it (#302). Off, only the buttons and shortcuts do, for whoever trips it by accident. */
 	emptyClickTogglesPlayer: true,
-	/** Take the accent colour from the playing track's cover, crossfading on each change. */
-	artworkAccent: false,
 	/** Theater mode's second and third columns (#297). Sticky, like every view toggle. */
 	theaterLyrics: true,
 	theaterQueue: false,
-	/** Derive the whole palette from Matugen. Off by default. */
-	matugen: false,
 	enhancedLyrics: false,
 	...LYRICS_DEFAULTS
 });
@@ -168,262 +83,66 @@ export function setAppearance(patch: Partial<typeof appearance>): void {
 	localStorage.setItem(APPEARANCE_KEY, JSON.stringify(appearance));
 }
 
-/**
- * What the tokens resolve to *after* the preset and the overrides are applied. The controls read
- * this so their starting position is wherever the current theme actually sits, instead of a
- * hardcoded default that goes stale the moment a preset moves it.
- */
-export const effective = $state({
-	hue: 326,
-	radius: 0.45,
-	accent: '#000000',
-	fontSans: '',
-	fontHeading: ''
-});
-
-/**
- * oklch/oklab/rgb/anything CSS -> hex. Painted and read back rather than taken from `fillStyle`,
- * which WebKitGTK hands straight back in whatever space it was given: reading the string only ever
- * worked for the hex accents, so every palette theme's picker opened on black. It matters more now
- * that `--primary` is a registered property (layout.css) and therefore computes to `oklab()` even
- * when it was written as a hex. '#000000' if the colour won't parse, same as before.
- */
-let scratch: CanvasRenderingContext2D | null | undefined;
-function toHex(color: string): string {
-	// One scratch canvas, reused. A fresh 2D context per call is a native allocation the JS heap
-	// measurement cannot see, and this runs on most track changes (via `applyArtworkAccent`).
-	if (scratch === undefined) {
-		const c = document.createElement('canvas');
-		c.width = c.height = 1;
-		scratch = c.getContext('2d', { willReadFrequently: true });
-	}
-	const ctx = scratch;
-	if (!ctx) return '#000000';
-	ctx.fillStyle = '#000000'; // stays, if the engine can't parse what comes next
-	ctx.fillStyle = color;
-	ctx.fillRect(0, 0, 1, 1);
-	const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data;
-	return '#' + [r, g, b].map((c) => c.toString(16).padStart(2, '0')).join('');
-}
-
-/**
- * Re-read the tokens. Called after every apply, and by the settings modal on open: toggling
- * light/dark doesn't route through here, and a palette's --primary differs between the two.
- */
-export function readBack(): void {
-	const cs = getComputedStyle(document.documentElement);
-	const g = (n: string) => cs.getPropertyValue(n).trim();
-	effective.hue = parseFloat(g('--hue')) || 0;
-	effective.radius = parseFloat(g('--radius')) || 0;
-	effective.accent = toHex(g('--primary'));
-	effective.fontSans = g('--font-sans');
-	effective.fontHeading = g('--font-heading');
-}
-
-/** Text colour for an accent fill. Also used by `ThemeMock`, which mirrors `apply` on a leaf. */
-export const onAccent = (color: string) => (isLight(color) ? ON_LIGHT : ON_DARK);
-
-export function m3Seed(color: string | null): { h: string; c: string } | null {
-	const ok = color ? hexToOklch(color) : null;
-	if (!ok) return null;
-	return {
-		h: ok.h.toFixed(1),
-		c: Math.min(1.35, Math.max(0.15, ok.c / 0.1305)).toFixed(3)
-	};
-}
-
-/** Write the accent quartet as inline vars on <html>, foreground picked for legibility on it. */
-function setAccentVars(color: string): void {
-	const root = document.documentElement;
-	if (theme.id === 'material') {
-		const seed = m3Seed(color);
-		if (seed) {
-			root.style.setProperty('--m3-seed-h', seed.h);
-			root.style.setProperty('--m3-c', seed.c);
-			if (custom.hue === null) root.style.setProperty('--hue', seed.h);
-		}
-		return;
-	}
-	const fg = onAccent(color);
-	root.style.setProperty('--primary', color);
-	root.style.setProperty('--primary-foreground', fg);
-	root.style.setProperty('--accent', color);
-	root.style.setProperty('--accent-foreground', fg);
-}
-
-function apply(): void {
-	const t = THEMES.find((x) => x.id === theme.id) ?? THEMES[0];
-	const root = document.documentElement;
-	// Reset first, so switching palettes (or clearing a custom override) never leaves the previous
-	// choice's inline vars or class behind.
-	[...ACCENT_VARS, ...M3_SEED_VARS, ...CUSTOM_VARS, '--art-h'].forEach((v) =>
-		root.style.removeProperty(v)
-	);
-	root.classList.remove(...PALETTE_CLASSES, TINT_CLASS);
-	root.classList.add(`theme-${t.id}`); // 'default' has no rule: :root/.dark are its tokens
-
-	// The Matugen palette brings its own accent (its stylesheet sets it), so the custom one steps aside.
-	if (custom.accent && !appearance.matugen) setAccentVars(custom.accent);
-	// Last, so the artwork wins while it's on and the user's own theme is back the moment it isn't.
-	if (art) setArtVars(art);
-	if (custom.hue !== null && !(art && theme.id === 'material')) {
-		root.style.setProperty('--hue', String(custom.hue));
-	}
-	if (custom.radius !== null) root.style.setProperty('--radius', `${custom.radius}rem`);
-	if (custom.fontSans) root.style.setProperty('--font-sans', custom.fontSans);
-	if (custom.fontHeading) root.style.setProperty('--font-heading', custom.fontHeading);
-
-	readBack();
-}
-
-export function applyTheme(id: ThemeId): void {
-	theme.id = THEMES.some((t) => t.id === id) ? id : THEMES[0].id;
+/** Change colour settings: applied, cached for the next launch, and saved (so synced) in the backend. */
+export function setM3(patch: Partial<typeof m3>): void {
+	Object.assign(m3, patch);
+	localStorage.setItem(M3_KEY, JSON.stringify(m3));
+	const save = (key: string, value: string) => setSetting(key, value).catch(() => {});
+	if (patch.seed !== undefined) save(SEED_SETTING, String(hexToArgbInt(m3.seed)));
+	if (patch.dynamic !== undefined) save(DYNAMIC_SETTING, String(m3.dynamic));
+	if (patch.pureBlack !== undefined) save(PURE_BLACK_SETTING, String(m3.pureBlack));
 	apply();
-	localStorage.setItem(KEY, theme.id);
 }
 
-const persist = () => localStorage.setItem(CUSTOM_KEY, JSON.stringify(custom));
+/** Only well-formed values: localStorage can be hand-edited, the backend's can come from a phone. */
+function adopt(saved: { seed?: unknown; dynamic?: unknown; pureBlack?: unknown }): void {
+	if (isHex(saved.seed)) m3.seed = saved.seed.toLowerCase();
+	if (typeof saved.dynamic === 'boolean') m3.dynamic = saved.dynamic;
+	if (typeof saved.pureBlack === 'boolean') m3.pureBlack = saved.pureBlack;
+}
 
-export function setCustom(patch: Partial<Custom>): void {
-	Object.assign(custom, patch);
+/** Take what the backend holds (startup, and after a sync with the phone changed it). */
+async function loadBackend(): Promise<void> {
+	const s = await getSettings().catch(() => ({}) as Record<string, string>);
+	const bool = (v: string | undefined) => (v === 'true' ? true : v === 'false' ? false : undefined);
+	const seed = Number(s[SEED_SETTING]);
+	const before = JSON.stringify(m3);
+	adopt({
+		seed: s[SEED_SETTING] && Number.isInteger(seed) ? argbIntToHex(seed) : undefined,
+		dynamic: bool(s[DYNAMIC_SETTING]),
+		pureBlack: bool(s[PURE_BLACK_SETTING])
+	});
+	if (JSON.stringify(m3) === before) return;
+	localStorage.setItem(M3_KEY, JSON.stringify(m3));
 	apply();
-	persist();
 }
 
-/** Drops the overrides. Loaded font *files* stay: they're assets, not a setting. */
-export function resetCustom(): void {
-	setCustom({ accent: null, hue: null, radius: null, fontSans: null, fontHeading: null });
-}
-
-/** True when nothing is overridden, so the UI can disable the reset. */
-export function isDefaultCustom(): boolean {
-	return !custom.accent && custom.hue === null && custom.radius === null && !custom.fontSans && !custom.fontHeading;
-}
-
-// --- Font files loaded from disk -------------------------------------------------------------
-// Each file becomes an @font-face keyed on its filename, so it shows up in both font dropdowns
-// like a bundled family. Only the path is stored: re-reading the file each launch keeps a 4 MB
-// variable font out of localStorage, at the cost of the entry going dead if the file moves.
-
-const FONT_STYLE_ID = 'custom-font-files';
-
-/** Family name for a loaded file: its base name, minus extension and anything CSS-unsafe. */
-export function fileFamily(path: string): string {
-	const base = path.split(/[\\/]/).pop() ?? path;
-	// ponytail: two files with the same name collide on one family — last one registered wins.
-	return base.replace(/\.[^.]+$/, '').replace(/[^\w \-]/g, '').trim() || 'Custom font';
-}
-
-/** Loaded files as font-dropdown entries, so they sit alongside the bundled ones. */
-export function fileFonts(): { label: string; value: string }[] {
-	return custom.fontFiles.map((p) => ({
-		label: fileFamily(p),
-		value: `'${fileFamily(p)}', sans-serif`
-	}));
-}
-
-/** Drop a path from the library, and clear any font row still pointing at its family. */
-function forget(path: string): void {
-	custom.fontFiles = custom.fontFiles.filter((p) => p !== path);
-	const gone = `'${fileFamily(path)}', sans-serif`;
-	if (custom.fontSans === gone) custom.fontSans = null;
-	if (custom.fontHeading === gone) custom.fontHeading = null;
-}
-
-/**
- * (Re)build the `@font-face` rules, and forget any file that has since been deleted or moved —
- * the grant is what tells us, since it checks the file exists. Without the pruning, a font that is
- * no longer on disk keeps its dropdown entry and its row keeps *claiming* to use it while the app
- * silently renders the fallback. Runs at startup and whenever the settings modal opens.
- */
-export async function registerFontFiles(): Promise<void> {
-	const rules: string[] = [];
-	const missing: string[] = [];
-	for (const path of custom.fontFiles) {
-		try {
-			// Grant the URL before the rule exists: a font that 403s once is never retried.
-			await allowFontFile(path);
-		} catch {
-			missing.push(path);
-			continue;
-		}
-		rules.push(
-			`@font-face { font-family: '${fileFamily(path)}'; src: url('${convertFileSrc(path)}'); }`
-		);
-	}
-	if (missing.length) {
-		missing.forEach(forget);
-		persist();
-		apply(); // a row that pointed at a missing font falls back to the preset's, visibly
-	}
-	let el = document.getElementById(FONT_STYLE_ID);
-	if (!el) {
-		el = document.createElement('style');
-		el.id = FONT_STYLE_ID;
-		document.head.append(el);
-	}
-	el.textContent = rules.join('\n');
-}
-
-/** Load a font file the user picked. Throws (for the caller to report) if it can't be granted. */
-export async function addFontFile(path: string): Promise<string> {
-	await allowFontFile(path);
-	if (!custom.fontFiles.includes(path)) custom.fontFiles.push(path);
-	persist();
-	await registerFontFiles();
-	return fileFamily(path);
-}
-
-export function removeFontFile(path: string): void {
-	forget(path);
-	persist();
-	apply();
-	registerFontFiles();
-}
-
-/** First family in a font stack, unquoted — what the UI shows and matches on. */
-export function familyName(stack: string): string {
-	return (stack.split(',')[0] ?? '').replace(/["']/g, '').trim();
-}
-
-/**
- * Is this font family installed? Renders a string in it and compares the width against a fallback.
- * ponytail: a custom font that happens to measure exactly like monospace reads as missing. It's a
- * hint next to the input, not a gate — the font is applied either way.
- */
-export function fontAvailable(name: string): boolean {
-	const ctx = document.createElement('canvas').getContext('2d');
-	if (!ctx || !name.trim()) return true;
-	const probe = 'mmmmmmmmmmlli';
-	ctx.font = '72px monospace';
-	const base = ctx.measureText(probe).width;
-	ctx.font = `72px "${name}", monospace`;
-	return ctx.measureText(probe).width !== base;
-}
-
-// --- Artwork colours --------------------------------------------------------------------------
-// The playing cover's colour, layered on top of the preset and the custom accent, so switching it
-// off puts the user's own theme straight back. Not persisted: it's derived from whatever is
-// playing, and the next track overwrites it.
-//
-// Two things come out of one colour: the accent quartet (inline vars, as everywhere else) and
-// --art-h, the hue the fill rules in layout.css are derived from.
-//
-// Only fills are tinted. Tinting text and borders too is what made the app unusable after a night
-// of playback (#217): a root custom property invalidates every element that inherits it, and
-// repainting every text run in a new colour cost ~20 MB per track change that WebKitGTK never gave
-// back. Measurements are in the `--- Artwork tint ---` comment in layout.css.
-//
-// The accent changes in one step. It used to crossfade (first a requestAnimationFrame loop, then a
-// CSS transition over @property-registered vars), and both spent whole-document restyles on a
-// decoration: see the comment where those registrations used to be in layout.css.
-
-let art: { h: number; hex: string } | null = null;
+// The playing cover's colour while "Dynamic colour" is on. Not persisted: the next track overwrites it.
+let art: string | null = null;
 let wanted = '';
-// Light or dark, as mode-watcher reports it. Not read off the `.dark` class: mode-watcher flips that
-// a frame after `mode.current` changes, so a re-band on the toggle read the old mode and gave light
-// mode the dark accent and dark mode the light one until the next track.
-let darkMode = false;
+let current = '';
+
+/**
+ * Write the scheme for the current seed. `animate` crossfades the change (a cover change) with a
+ * view transition: two snapshots blended on the compositor, the cheapest way to fade every colour
+ * at once, where transitioning the tokens themselves restyles the document every frame (#217).
+ */
+function apply(animate = false): void {
+	const css = schemeSheet((m3.dynamic && art) || m3.seed, m3.pureBlack);
+	if (css === current) return; // a repeat or a cover with the same colour: no restyle
+	current = css;
+	let style = document.getElementById(STYLE_ID);
+	if (!style) {
+		style = document.createElement('style');
+		style.id = STYLE_ID;
+		document.head.prepend(style);
+	}
+	const el = style;
+	const write = () => (el.textContent = css);
+	const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+	if (animate && document.startViewTransition && !still) document.startViewTransition(write);
+	else write();
+}
 
 // The window can be closed to the tray with playback carrying on, and WebKitGTK does not tell the
 // page (`document.visibilityState` stays "visible"), so Rust does: `ui-visible`, from tray.rs.
@@ -439,7 +158,7 @@ function restyle(): void {
 		restyleWanted = true;
 		return;
 	}
-	apply();
+	apply(true);
 }
 
 export function setUiVisible(visible: boolean): void {
@@ -451,30 +170,9 @@ export function setUiVisible(visible: boolean): void {
 }
 
 /**
- * Push the current artwork colour into the accent vars and the tint hue. The cover's colour is
- * stored raw and banded here, so the light/dark decision is re-made on every apply instead of being
- * frozen into the cache at decode time (#137).
- */
-function setArtVars(c: { h: number; hex: string }): void {
-	if (theme.id === 'material') {
-		const seed = m3Seed(c.hex);
-		if (seed) {
-			document.documentElement.style.setProperty('--m3-seed-h', seed.h);
-			document.documentElement.style.setProperty('--m3-c', seed.c);
-			document.documentElement.style.setProperty('--hue', seed.h);
-		}
-		return;
-	}
-	// AMOLED stays black in light mode (layout.css), so the tint and the accent band stay dark too.
-	setAccentVars(toAccent(c.hex, darkMode || theme.id === 'amoled'));
-	document.documentElement.style.setProperty('--art-h', c.h.toFixed(1));
-	document.documentElement.classList.add(TINT_CLASS);
-}
-
-/**
- * Point the theme at a cover URL. `null`/undefined (setting off, nothing playing) drops the layer
- * immediately. An unreadable or colourless cover drops it too once decoded: keeping the last
- * track's colour paints this one in a cover it doesn't have (#522).
+ * Point the theme at a cover URL (only while "Dynamic colour" is on). `null`/undefined (setting off,
+ * nothing playing) goes back to the user's seed. An unreadable or colourless cover does too once
+ * decoded: keeping the last track's colour paints this one in a cover it doesn't have (#522).
  */
 export function applyArtworkAccent(url: string | undefined | null): void {
 	wanted = url ?? '';
@@ -486,19 +184,10 @@ export function applyArtworkAccent(url: string | undefined | null): void {
 		return;
 	}
 	artworkAccent(url).then((hex) => {
-		if (wanted !== url) return; // a faster track change already won
-		const hsv = hex ? hexToHsv(hex) : null;
-		const next = hsv ? { h: hsv.h, hex: hex! } : null;
-		if (art?.hex === next?.hex) return; // same colour (a repeat, the queue moved), or theme already
-		art = next;
-		restyle(); // through the normal path, so `effective` and the pickers agree
+		if (wanted !== url || art === hex) return; // a faster track change won, or the same colour
+		art = hex;
+		restyle();
 	});
-}
-
-/** Re-band the artwork accent after a light/dark flip. No restyle when the setting is off. */
-export function refreshArtworkAccent(dark: boolean): void {
-	darkMode = dark;
-	if (art) restyle();
 }
 
 /** Decode a cover the user is about to hear, so its colour is ready the instant the track flips. */
@@ -506,74 +195,16 @@ export function prewarmArtworkAccent(url: string | undefined | null): void {
 	if (url) warmAccent(url);
 }
 
-function applyMatugenTheme(css: string | null): void {
-	let style = document.getElementById(MATUGEN_STYLE_ID) as HTMLStyleElement | null;
-	if (!css) {
-		style?.remove();
-		document.documentElement.classList.remove('matugen-theme');
-		apply();
-		return;
-	}
-	if (!style) {
-		style = document.createElement('style');
-		style.id = MATUGEN_STYLE_ID;
-		document.head.prepend(style);
-	}
-	style.textContent = css;
-	document.documentElement.classList.add('matugen-theme');
-	apply();
-}
-
-let matugenUnlisten: (() => void) | null = null;
-let matugenQueue = Promise.resolve();
-
-/** Start or stop following the Matugen file to match the switch. Queued, so a fast off/on can't interleave. */
-export function syncMatugen(): Promise<void> {
-	matugenQueue = matugenQueue
-		.then(async () => {
-			if (appearance.matugen && !matugenUnlisten) {
-				matugenUnlisten = await onMatugenThemeChanged(applyMatugenTheme);
-				await startMatugenWatcher();
-				applyMatugenTheme(await getMatugenTheme());
-			} else if (!appearance.matugen && matugenUnlisten) {
-				matugenUnlisten();
-				matugenUnlisten = null;
-				await stopMatugenWatcher();
-				applyMatugenTheme(null);
-			}
-		})
-		.catch((e) => logUi('error', `Matugen: ${String(e)}`));
-	return matugenQueue;
-}
-
-/** Apply the stored theme + customization on startup (defaults to the default palette, no overrides). */
+/** Apply the cached theme on startup (before the first paint), then reconcile with the backend. */
 export function initTheme(): void {
-	const stored = localStorage.getItem(KEY);
-	theme.id = THEMES.some((t) => t.id === stored) ? (stored as ThemeId) : 'default';
 	try {
-		const saved = JSON.parse(localStorage.getItem(CUSTOM_KEY) ?? '{}');
-		// Only keys we know about, only the shape we expect: a hand-edited or older localStorage
-		// entry must not be able to write arbitrary properties into the inline style.
-		for (const k of ['accent', 'fontSans', 'fontHeading'] as const) {
-			if (typeof saved?.[k] === 'string') custom[k] = saved[k];
-		}
-		for (const k of ['hue', 'radius'] as const) {
-			if (typeof saved?.[k] === 'number') custom[k] = saved[k];
-		}
-		if (Array.isArray(saved?.fontFiles)) {
-			custom.fontFiles = saved.fontFiles.filter((p: unknown) => typeof p === 'string');
-		}
+		adopt(JSON.parse(localStorage.getItem(M3_KEY) ?? '{}') ?? {});
 	} catch {
-		// unparseable — start clean
+		// unparseable — defaults
 	}
-	if (stored && stored in LEGACY_ACCENTS) {
-		const hex = LEGACY_ACCENTS[stored];
-		if (hex && !custom.accent) {
-			custom.accent = hex;
-			persist();
-		}
-		localStorage.setItem(KEY, theme.id); // migrated once, not on every launch
-	}
+	// The old palette presets, custom accent/tint/roundness and fonts are gone; their keys are dropped.
+	localStorage.removeItem('primary-theme');
+	localStorage.removeItem('custom-theme');
 	try {
 		const saved = JSON.parse(localStorage.getItem(APPEARANCE_KEY) ?? '{}');
 		for (const k of [
@@ -584,10 +215,8 @@ export function initTheme(): void {
 			'tabbedPlayer',
 			'openPlayerOnPlay',
 			'emptyClickTogglesPlayer',
-			'artworkAccent',
 			'theaterLyrics',
 			'theaterQueue',
-			'matugen',
 			'enhancedLyrics',
 			'enhancedLyricsLineSync'
 		] as const) {
@@ -605,8 +234,16 @@ export function initTheme(): void {
 		// unparseable — keep the defaults
 	}
 	apply();
-	if (appearance.matugen) syncMatugen();
-	// Async (each file needs its URL granted first), so the app paints in the fallback font for a
-	// frame or two before a loaded font swaps in.
-	if (custom.fontFiles.length) registerFontFiles();
+	loadBackend();
+	onSharedSettingsChanged(loadBackend).catch(() => {});
+	// The other window (main / mini player) changed them: same origin, so this fires there.
+	window.addEventListener('storage', (e) => {
+		if (e.key !== M3_KEY) return;
+		try {
+			adopt(JSON.parse(e.newValue ?? '{}') ?? {});
+			apply();
+		} catch {
+			// ignore a garbled write
+		}
+	});
 }

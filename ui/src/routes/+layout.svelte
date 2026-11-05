@@ -1,7 +1,7 @@
 <script lang="ts">
 	import './layout.css';
 	import favicon from '$lib/assets/favicon.svg';
-	import { ModeWatcher, mode } from 'mode-watcher';
+	import { ModeWatcher } from 'mode-watcher';
 	import { HugeiconsIcon } from '@hugeicons/svelte';
 	import {
 		CheckmarkCircle02Icon,
@@ -20,8 +20,8 @@
 		appearance,
 		applyArtworkAccent,
 		prewarmArtworkAccent,
-		refreshArtworkAccent,
-		initTheme
+		initTheme,
+		m3
 	} from '$lib/theme.svelte';
 	import { loadAppIcon } from '$lib/appicon.svelte';
 	import { thumb } from '$lib/thumb';
@@ -131,22 +131,15 @@
 		if (np.tab === 'comments') np.tab = tabBeforeComments;
 	});
 
-	// "Adapt colors to artwork": re-run on every track change and on the toggle itself. The 120px
-	// cover is the one the player bar has already loaded, so this costs no extra request. A Matugen
-	// palette owns every colour while it's on, so the artwork stands down.
-	const artworkTint = $derived(appearance.artworkAccent && !appearance.matugen);
+	// "Dynamic colour": re-run on every track change and on the toggle itself. The 120px cover is the
+	// one the player bar has already loaded, so this costs no extra request.
 	$effect(() => {
-		applyArtworkAccent(artworkTint ? thumb(playback.now?.thumbnail, 120) : null);
-	});
-	// The accent is banded against the active theme (a cover's colour that reads on a light page is
-	// mud on a dark one, #137), so flipping light/dark has to re-derive it from the same cover.
-	$effect(() => {
-		refreshArtworkAccent(mode.current === 'dark');
+		applyArtworkAccent(m3.dynamic ? thumb(playback.now?.thumbnail, 120) : null);
 	});
 	// Same colour, one track early. Reading it off the queue instead of the track change means the
 	// palette starts moving on the frame the artwork swaps, not after a fetch and a decode.
 	$effect(() => {
-		if (!artworkTint) return;
+		if (!m3.dynamic) return;
 		const q = playback.queue;
 		prewarmArtworkAccent(thumb(q.items[q.currentIndex + 1]?.thumbnail, 120));
 	});
