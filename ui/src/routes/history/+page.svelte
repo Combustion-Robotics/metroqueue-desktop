@@ -113,7 +113,7 @@
 
 <div class="p-6">
 	{#if loading}
-		<div class="mb-4 h-36 animate-pulse rounded-2xl border bg-card/40"></div>
+		<div class="mb-4 h-36 animate-pulse rounded-xl bg-surface-container"></div>
 		{#each Array(8) as _, i (i)}
 			<TrackRowSkeleton />
 		{/each}
@@ -121,7 +121,7 @@
 		<ErrorState message={error} onRetry={load} />
 	{:else}
 		<!-- The same rounded band the Library ▸ Songs tab wears, tinted by the last thing played. -->
-		<div class="relative mb-6 overflow-hidden rounded-2xl border">
+		<div class="relative mb-6 overflow-hidden rounded-xl bg-surface-container">
 			<!-- The wash and its fade share one layer (`art-wash` on the wrapper): see HomeHero. -->
 			<div class="art-wash pointer-events-none absolute inset-0 overflow-hidden">
 				{#if covers[0] && !artFailed}
@@ -134,7 +134,7 @@
 					/>
 				{/if}
 				<div
-					class="absolute inset-0 bg-gradient-to-r from-background via-background/80 to-background/40"
+					class="absolute inset-0 bg-gradient-to-r from-surface-container via-surface-container/80 to-surface-container/40"
 				></div>
 			</div>
 			<div class="relative flex flex-wrap items-center gap-4 p-4">
@@ -147,31 +147,30 @@
 								src={thumb(cover, 400)}
 								alt=""
 								style="z-index:{5 - i}"
-								class="relative -ml-5 h-20 w-20 rounded-xl object-cover shadow-lg ring-2 ring-background first:ml-0"
+								class="relative -ml-5 h-20 w-20 rounded-lg object-cover ring-2 ring-surface-container first:ml-0"
 							/>
 						{/each}
 					</div>
 				{:else}
 					<div
-						class="flex h-20 w-20 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"
+						class="flex h-20 w-20 shrink-0 items-center justify-center rounded-lg bg-primary-container text-on-primary-container"
 					>
 						<HugeiconsIcon icon={HistoryIcon} class="h-8 w-8" />
 					</div>
 				{/if}
 				<div class="min-w-0 flex-1">
-					<h1 class="font-heading text-2xl font-bold tracking-tight">{t('history.title')}</h1>
+					<h1 class="text-headline-lg font-bold">{t('history.title')}</h1>
 					<p class="mt-0.5 text-sm text-muted-foreground">
 						{filtering
 							? t('history.matching', { count: matchCount.toLocaleString() })
 							: t('history.subtitle')}
 					</p>
 					<div class="mt-3 flex flex-wrap items-center gap-2">
-						<Button class="gap-2 rounded-full" disabled={!flat.length} onclick={() => play(null, true)}>
+						<Button disabled={!flat.length} onclick={() => play(null, true)}>
 							<HugeiconsIcon icon={ShuffleIcon} class="h-4 w-4" /> {t('common.shuffle_all')}
 						</Button>
 						<Button
 							variant="outline"
-							class="gap-2 rounded-full"
 							disabled={!flat.length}
 							onclick={() => play(0)}
 						>
@@ -188,13 +187,13 @@
 		{#if visible.length}
 			<div class="content-in">
 				{#each visible as group (group.title)}
-					<!-- Sticky per bucket, so the day you are reading stays named while you scroll it. The
-					     blur is what keeps the rows legible as they pass underneath. -->
+					<!-- Sticky per bucket, so the day you are reading stays named while you scroll it. Opaque,
+					     not blurred: a backdrop-filter over a scrolling list re-blurs on every frame. -->
 					<h2
-						class="sticky top-0 z-10 mb-1 flex items-baseline gap-3 bg-background/85 py-2 backdrop-blur"
+						class="sticky top-0 z-10 mb-1 flex items-baseline gap-3 bg-background py-2"
 					>
-						<span class="font-heading text-lg font-bold tracking-tight">{group.title}</span>
-						<span class="h-px flex-1 bg-border"></span>
+						<span class="text-title-md font-bold">{group.title}</span>
+						<span class="h-px flex-1 bg-outline-variant"></span>
 						<span class="text-xs text-muted-foreground">
 							{t('history.songs_count', { count: group.items.length.toLocaleString() })}
 						</span>

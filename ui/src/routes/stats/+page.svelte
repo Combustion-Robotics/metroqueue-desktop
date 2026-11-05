@@ -169,13 +169,13 @@
 </script>
 
 {#snippet tile(icon: IconSvgElement, label: string, value: string, hint?: string)}
-	<div class="rounded-2xl bg-foreground/[0.04] p-4">
+	<div class="rounded-lg bg-surface-container p-4">
 		<div class="flex items-center gap-2 text-xs font-medium text-muted-foreground">
 			<HugeiconsIcon strokeWidth={STROKE} {icon} class="h-4 w-4 shrink-0 text-primary/70" />
 			<span class="truncate">{label}</span>
 		</div>
 		<div class="mt-1.5 flex min-w-0 items-baseline gap-2">
-			<span class="font-heading text-2xl font-bold tabular-nums">{value}</span>
+			<span class="text-headline-sm font-bold tabular-nums">{value}</span>
 			{#if hint}<span class="truncate text-xs text-muted-foreground">{hint}</span>{/if}
 		</div>
 	</div>
@@ -239,7 +239,7 @@
 		</div>
 
 		<div class="flex flex-wrap items-center justify-between gap-4 px-6 pt-10">
-			<h1 class="font-heading text-2xl font-bold tracking-tight">{t('stats.title')}</h1>
+			<h1 class="text-headline-lg font-bold">{t('stats.title')}</h1>
 			{#if stats?.firstAt}
 				<Tabs.Root value={range} onValueChange={(v) => (range = v as Range)}>
 					<Tabs.List>
@@ -253,7 +253,7 @@
 
 		{#if stats?.firstAt}
 			<div class="content-in px-6 pt-6">
-				<p class="font-heading text-6xl font-bold leading-none tracking-tight tabular-nums sm:text-7xl">
+				<p class="text-display-lg font-bold leading-none tabular-nums sm:text-7xl">
 					{#each total as part, i (i)}
 						<span>{part.n}</span><span
 							class="ml-1 mr-4 text-3xl font-semibold text-muted-foreground last:mr-0 sm:text-4xl"
@@ -310,9 +310,9 @@
 				<Skeleton class="h-16 w-72 rounded-lg" />
 				<Skeleton class="mt-4 h-4 w-56 rounded" />
 				<div class="mt-8 grid grid-cols-2 gap-3 lg:grid-cols-4">
-					{#each Array(4) as _, i (i)}<Skeleton class="h-[5.25rem] rounded-2xl" />{/each}
+					{#each Array(4) as _, i (i)}<Skeleton class="h-[5.25rem] rounded-lg" />{/each}
 				</div>
-				<Skeleton class="mt-12 h-56 w-full rounded-2xl" />
+				<Skeleton class="mt-12 h-56 w-full rounded-xl" />
 			</div>
 		{/if}
 	</header>
@@ -322,10 +322,10 @@
 	{:else if stats && !stats.firstAt}
 		<!-- Nothing counted yet: say what this page becomes, rather than a wall of zeros. -->
 		<div class="content-in flex flex-col items-center gap-3 px-6 py-24 text-center">
-			<div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+			<div class="flex h-16 w-16 items-center justify-center rounded-full bg-secondary-container text-on-secondary-container">
 				<HugeiconsIcon strokeWidth={STROKE} icon={Chart02Icon} class="h-8 w-8" />
 			</div>
-			<h2 class="font-heading text-xl font-bold tracking-tight">{t('stats.empty_title')}</h2>
+			<h2 class="text-headline-sm font-bold">{t('stats.empty_title')}</h2>
 			<p class="max-w-sm text-sm text-muted-foreground">{t('stats.empty')}</p>
 			<p class="max-w-sm text-xs text-muted-foreground/70">{t('stats.on_device')}</p>
 		</div>
@@ -363,16 +363,16 @@
 						<section class="min-w-0">
 							<SectionHeading strokeWidth={STROKE} title={t('stats.top_artists')} icon={UserStar01Icon} />
 							<button
-								class="flex w-full items-center gap-5 rounded-2xl bg-foreground/[0.04] p-4 text-left transition-colors enabled:cursor-pointer enabled:hover:bg-foreground/[0.07]"
+								class="flex w-full items-center gap-5 rounded-xl bg-surface-container p-4 text-left state-layer enabled:cursor-pointer"
 								disabled={!top.id}
 								onclick={() => openArtist(top)}
 							>
-								<div class="h-28 w-28 shrink-0 overflow-hidden rounded-full bg-muted shadow-lg">
+								<div class="h-28 w-28 shrink-0 overflow-hidden rounded-full bg-muted">
 									{@render avatar(top)}
 								</div>
 								<div class="min-w-0">
 									<div class="text-xs font-semibold tabular-nums text-primary">01</div>
-									<div class="truncate font-heading text-2xl font-bold tracking-tight">{top.name}</div>
+									<div class="truncate text-headline-sm font-bold">{top.name}</div>
 									<div class="mt-1 text-sm text-muted-foreground">
 										{listened(top.secs, tag)} · {t('library.play_count', {
 											count: num.format(top.plays)
@@ -391,7 +391,7 @@
 								{#each stats.topArtists.slice(1) as a, i (a.name)}
 									<li>
 										<button
-											class="flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left enabled:cursor-pointer enabled:hover:bg-foreground/5"
+											class="flex w-full items-center gap-3 rounded-md px-2 py-2 text-left state-layer enabled:cursor-pointer"
 											disabled={!a.id}
 											onclick={() => openArtist(a)}
 										>

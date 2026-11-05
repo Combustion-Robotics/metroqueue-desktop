@@ -165,7 +165,7 @@
 		<Button variant="ghost" size="icon-sm" aria-label={t('common.back')} onclick={() => history.back()}>
 			<HugeiconsIcon icon={ArrowLeft01Icon} class="h-5 w-5" />
 		</Button>
-		<h1 class="min-w-0 flex-1 truncate font-heading text-xl font-bold tracking-tight">
+		<h1 class="min-w-0 flex-1 truncate text-headline-sm font-bold">
 			{isNew ? t('vibes.create') : t('vibes.edit')}
 		</h1>
 		{#if !isNew}

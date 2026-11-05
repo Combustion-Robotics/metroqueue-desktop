@@ -55,7 +55,7 @@
 	}
 </script>
 
-<div class="relative isolate overflow-hidden rounded-2xl border bg-card" data-ctx>
+<div class="relative isolate overflow-hidden rounded-xl bg-card" data-ctx>
 	<!-- Lit by its own artwork. 96px because blur-2xl throws away everything finer anyway (the same
 	     reasoning as HomeHero), and a failed size just leaves the plain card. -->
 	{#if item.thumbnail && washOk}
@@ -86,7 +86,7 @@
 			title={item.subtitle ? `${item.title} • ${item.subtitle}` : item.title}
 		>
 			<div
-				class="flex h-28 w-28 shrink-0 items-center justify-center overflow-hidden bg-muted text-muted-foreground/50 shadow-xl {round
+				class="flex h-28 w-28 shrink-0 items-center justify-center overflow-hidden bg-muted text-muted-foreground/50 {round
 					? 'rounded-full'
 					: 'rounded-xl'}"
 			>
@@ -104,10 +104,10 @@
 			</div>
 			<div class="min-w-0">
 				<div
-					class="line-clamp-2 font-heading font-bold leading-tight tracking-tight {item.title
+					class="line-clamp-2 font-bold {item.title
 						.length > 28
-						? 'text-2xl'
-						: 'text-3xl'}"
+						? 'text-headline-sm'
+						: 'text-headline-md'}"
 				>
 					{item.title}
 				</div>
@@ -120,7 +120,7 @@
 			</div>
 		</div>
 		<button
-			class="flex h-12 w-12 shrink-0 cursor-pointer items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition-transform hover:scale-105 active:scale-95"
+			class="state-layer motion-control flex h-12 w-12 shrink-0 cursor-pointer items-center justify-center rounded-full bg-primary text-on-primary active:rounded-lg"
 			class:animate-pulse={busy}
 			disabled={busy}
 			aria-label={item.kind === 'artist' ? t('player.start_radio') : t('player.play')}
@@ -131,11 +131,11 @@
 		</button>
 		<ItemMenu
 			{item}
-			triggerClass="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-foreground/10 hover:text-foreground"
+			triggerClass="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full text-on-surface-variant state-layer"
 		/>
 	</div>
 	{#if rows.length}
-		<div class="border-t border-border/60 px-2 py-1.5">
+		<div class="px-2 pb-2">
 			{#each rows as song, i (song.video_id + ':' + i)}
 				<TrackRow
 					{song}

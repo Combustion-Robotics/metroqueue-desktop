@@ -135,7 +135,7 @@
 		     Spotify (#375). Gone as soon as there is anything here, so it never needs dismissing. -->
 		{#if nudge}
 		<button
-			class="mt-4 flex max-w-md cursor-pointer items-center gap-4 rounded-2xl border p-4 text-left transition-colors hover:bg-accent/10"
+			class="state-layer mt-4 flex max-w-md cursor-pointer items-center gap-4 rounded-xl bg-surface-container p-4 text-left"
 			onclick={() => openImport()}
 		>
 			<HugeiconsIcon icon={SpotifyIcon} class="h-8 w-8 shrink-0 text-primary" />
@@ -153,7 +153,7 @@
 
 <div class="p-6">
 	<div class="mb-6 flex items-center justify-between">
-		<h1 class="font-heading text-2xl font-bold">{t('library.title')}</h1>
+		<h1 class="text-headline-lg font-bold">{t('library.title')}</h1>
 		<div class="flex items-center gap-2">
 			<!-- Only with something to push: saves made before signing in, which live on this
 			     machine until this button puts them on the account. -->

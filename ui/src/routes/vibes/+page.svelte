@@ -25,7 +25,7 @@
 </script>
 
 <div class="px-6 pt-10 pb-8">
-	<h1 class="font-heading text-2xl font-bold tracking-tight">{t('vibes.title')}</h1>
+	<h1 class="text-headline-lg font-bold">{t('vibes.title')}</h1>
 	<p class="mt-1 text-sm text-muted-foreground">{t('vibes.subtitle')}</p>
 	<div class="mt-6 grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-3">
 		{#each list as vibe (vibe.id)}

@@ -399,7 +399,7 @@
 		<div class="absolute inset-0 bg-gradient-to-b from-transparent to-background"></div>
 	</div>
 
-	<h1 class="px-6 pt-10 font-heading text-4xl font-bold tracking-tight">{t('common.search')}</h1>
+	<h1 class="px-6 pt-10 text-headline-lg font-bold">{t('common.search')}</h1>
 
 	<div class="h-px" {@attach stickWatch}></div>
 	<div
@@ -574,7 +574,7 @@
 					<section>
 						<SectionHeading title={t('search.recent')} icon={Clock01Icon}>
 							<button
-								class="shrink-0 cursor-pointer text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+								class="state-layer -mr-2 h-8 shrink-0 cursor-pointer rounded-full px-3 text-label-lg text-primary"
 								onclick={clearSearches}
 							>
 								{t('search.clear_recent')}
@@ -583,17 +583,17 @@
 						<div class="flex flex-wrap gap-2">
 							{#each personal.searches as q (q)}
 								<div
-									class="flex items-center rounded-full bg-foreground/5 text-sm transition-colors hover:bg-foreground/10"
+									class="flex h-8 items-center overflow-hidden rounded-sm border border-outline-variant text-label-lg text-on-surface-variant"
 								>
 									<button
-										class="flex cursor-pointer items-center gap-2 py-1.5 pl-3.5 pr-1.5 font-medium text-foreground/80 hover:text-foreground"
+										class="state-layer flex h-full cursor-pointer items-center gap-2 pl-2 pr-1.5 text-on-surface"
 										onclick={() => searchFor(q)}
 									>
-										<HugeiconsIcon icon={Search01Icon} class="h-3.5 w-3.5 text-muted-foreground" />
+										<HugeiconsIcon icon={Search01Icon} class="h-4.5 w-4.5 text-on-surface-variant" />
 										{q}
 									</button>
 									<button
-										class="mr-1 flex h-6 w-6 cursor-pointer items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-foreground/10 hover:text-foreground"
+										class="state-layer mr-1 flex h-6 w-6 cursor-pointer items-center justify-center rounded-full"
 										aria-label={t('search.forget', { query: q })}
 										title={t('search.forget', { query: q })}
 										onclick={() => forgetSearch(q)}

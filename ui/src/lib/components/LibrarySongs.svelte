@@ -229,7 +229,7 @@
 </script>
 
 {#if loading}
-	<div class="mb-4 h-36 animate-pulse rounded-2xl border bg-card/40"></div>
+	<div class="mb-4 h-36 animate-pulse rounded-xl bg-surface-container"></div>
 	{#each Array(8) as _, i (i)}
 		<TrackRowSkeleton />
 	{/each}
@@ -238,7 +238,7 @@
 {:else}
 	<!-- The header of the list rather than a page header: a rounded band the covers of your own
 	     library tint, so the tab has a face without pretending to be a playlist page. -->
-	<div class="relative mb-4 overflow-hidden rounded-2xl border">
+	<div class="relative mb-4 overflow-hidden rounded-xl bg-surface-container">
 		<!-- The wash and its fade share one layer (`art-wash` on the wrapper): see HomeHero. -->
 		<div class="art-wash pointer-events-none absolute inset-0 overflow-hidden">
 			{#if covers[0] && !artFailed}
@@ -250,36 +250,35 @@
 					onerror={() => (artFailed = true)}
 				/>
 			{/if}
-			<div class="absolute inset-0 bg-gradient-to-r from-background via-background/80 to-background/40"></div>
+			<div class="absolute inset-0 bg-gradient-to-r from-surface-container via-surface-container/80 to-surface-container/40"></div>
 		</div>
 		<div class="relative flex flex-wrap items-center gap-4 p-4">
 			{#if covers.length >= 4}
-				<div class="grid h-28 w-28 shrink-0 grid-cols-2 grid-rows-2 overflow-hidden rounded-xl shadow-lg">
+				<div class="grid h-28 w-28 shrink-0 grid-cols-2 grid-rows-2 overflow-hidden rounded-lg">
 					{#each covers.slice(0, 4) as cover (cover)}
 						<img src={thumb(cover, 400)} alt="" class="h-full w-full object-cover" />
 					{/each}
 				</div>
 			{:else if covers.length}
-				<img src={thumb(covers[0], 400)} alt="" class="h-28 w-28 shrink-0 rounded-xl object-cover shadow-lg" />
+				<img src={thumb(covers[0], 400)} alt="" class="h-28 w-28 shrink-0 rounded-lg object-cover" />
 			{:else}
-				<div class="flex h-28 w-28 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+				<div class="flex h-28 w-28 shrink-0 items-center justify-center rounded-lg bg-primary-container text-on-primary-container">
 					<HugeiconsIcon icon={uploads ? CloudUploadIcon : MusicNote01Icon} class="h-10 w-10" />
 				</div>
 			{/if}
 			<div class="min-w-0 flex-1">
-				<h2 class="font-heading text-2xl font-bold tracking-tight">
+				<h2 class="text-headline-sm font-bold">
 					{uploads ? t('library.uploads_tab') : t('common.songs')}
 				</h2>
 				<p class="mt-0.5 text-sm text-muted-foreground">
 					{line}
 				</p>
 				<div class="mt-3 flex flex-wrap items-center gap-2">
-					<Button class="gap-2 rounded-full" disabled={!songs.length} onclick={() => play(null, true)}>
+					<Button disabled={!songs.length} onclick={() => play(null, true)}>
 						<HugeiconsIcon icon={ShuffleIcon} class="h-4 w-4" /> {t('common.shuffle_all')}
 					</Button>
 					<Button
 						variant="outline"
-						class="gap-2 rounded-full"
 						disabled={!songs.length}
 						onclick={() => play(null)}
 					>
@@ -328,7 +327,7 @@
 
 	{#if limit}
 		{#if shownSongs.length > limit}
-			<Button variant="outline" size="sm" class="mt-2 rounded-full" onclick={onSeeAll}>
+			<Button variant="outline" size="sm" class="mt-2" onclick={onSeeAll}>
 				{t('common.see_all')}
 			</Button>
 		{/if}

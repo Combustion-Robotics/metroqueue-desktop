@@ -53,7 +53,7 @@
 </script>
 
 <div class="p-6">
-	<h1 class="mb-6 font-heading text-2xl font-bold">{title}</h1>
+	<h1 class="mb-6 text-headline-lg font-bold">{title}</h1>
 	{#if loading}
 		<div class="card-grid">
 			{#each Array(12) as _, i (i)}

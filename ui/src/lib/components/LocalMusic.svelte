@@ -104,7 +104,7 @@
 
 <div class="flex flex-col gap-5">
 	<!-- Folders -->
-	<div class="rounded-xl border bg-card/40 p-4">
+	<div class="rounded-xl bg-surface-container p-4">
 		<div class="mb-3 flex items-center justify-between gap-3">
 			<div class="min-w-0">
 				<div class="flex items-center gap-2 font-medium">
@@ -131,12 +131,12 @@
 		{#if local.folders.length}
 			<ul class="flex flex-col gap-1">
 				{#each local.folders as folder (folder)}
-					<li class="flex items-center justify-between gap-3 rounded-lg px-2 py-1.5 hover:bg-accent/10">
+					<li class="flex items-center justify-between gap-3 rounded-md px-2 py-1.5 state-layer">
 						<span class="truncate font-mono text-xs text-muted-foreground" title={folder}>
 							{folder}
 						</span>
 						<button
-							class="flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-full text-muted-foreground transition hover:bg-destructive/10 hover:text-destructive"
+							class="flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-full text-on-surface-variant state-layer hover:text-error"
 							aria-label={t('a11y.remove_folder')}
 							onclick={() => forget(folder)}
 						>
@@ -197,7 +197,7 @@
 					<div class="mb-3 flex gap-2">
 						<Button
 							size="sm"
-							class="gap-2 rounded-full"
+							class="gap-2"
 							disabled={!songs.length}
 							onclick={() => playAll(false)}
 						>
@@ -206,7 +206,7 @@
 						<Button
 							size="sm"
 							variant="outline"
-							class="gap-2 rounded-full"
+							class="gap-2"
 							disabled={!songs.length}
 							onclick={() => playAll(true)}
 						>
