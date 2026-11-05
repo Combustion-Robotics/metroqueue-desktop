@@ -1722,8 +1722,13 @@ fn start_crossfade(decks: &Arc<Decks>, from: usize, fade: f64, plan: Transition)
             }
         }
         let mut cancelled = false;
+        // Paced against a deadline: each step's mpv round trips would otherwise stretch the fade.
+        let began = std::time::Instant::now();
         for step in 1..=steps {
-            std::thread::sleep(FADE_STEP);
+            std::thread::sleep(
+                (began + FADE_STEP * step as u32)
+                    .saturating_duration_since(std::time::Instant::now()),
+            );
             // A pause, a seek or a skip landed. Stop writing volumes: by now one of these decks
             // is holding a track nobody asked for.
             if decks.fade_gen.load(Ordering::SeqCst) != gen {
