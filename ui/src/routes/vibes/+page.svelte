@@ -26,7 +26,7 @@
 
 <div class="px-6 pt-10 pb-8">
 	<h1 class="text-headline-lg font-bold">{t('vibes.title')}</h1>
-	<p class="mt-1 text-sm text-muted-foreground">{t('vibes.subtitle')}</p>
+	<p class="mt-1 text-body-md text-on-surface-variant">{t('vibes.subtitle')}</p>
 	<div class="mt-6 grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-3">
 		{#each list as vibe (vibe.id)}
 			<div class="relative min-w-0">
@@ -37,11 +37,11 @@
 						askOpen = true;
 					}}
 				>
-					<VibeScene spec={vibe.scene} class="aspect-[3/4] w-full rounded-2xl" />
-					<p class="truncate px-1 py-2 text-sm font-medium">{vibe.name}</p>
+					<VibeScene spec={vibe.scene} class="aspect-[3/4] w-full rounded-lg" />
+					<p class="truncate px-1 py-2 text-title-sm">{vibe.name}</p>
 				</button>
 				<button
-					class="absolute top-1 right-1 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-black/35 text-white transition-colors hover:bg-black/55"
+					class="absolute top-2 right-2 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-black/35 text-white transition-colors hover:bg-black/55"
 					aria-label={t('vibes.edit')}
 					title={t('vibes.edit')}
 					onclick={() => edit(vibe.id)}
@@ -52,11 +52,11 @@
 		{/each}
 		<button class="block min-w-0 cursor-pointer text-left" onclick={() => edit()}>
 			<div
-				class="flex aspect-[3/4] w-full items-center justify-center rounded-2xl bg-foreground/5 text-muted-foreground transition-colors hover:bg-foreground/10 hover:text-foreground"
+				class="state-layer flex aspect-[3/4] w-full items-center justify-center rounded-lg bg-surface-container-high text-on-surface-variant"
 			>
 				<HugeiconsIcon icon={Add01Icon} class="h-10 w-10" />
 			</div>
-			<p class="truncate px-1 py-2 text-sm font-medium">{t('vibes.create')}</p>
+			<p class="truncate px-1 py-2 text-title-sm">{t('vibes.create')}</p>
 		</button>
 	</div>
 </div>

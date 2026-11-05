@@ -148,7 +148,7 @@
 	const key = (group: string, v: string) =>
 		`vibes.${group}.${v.replace(/[A-Z]/g, (c, i) => (i ? '_' : '') + c.toLowerCase())}` as TranslationKey;
 
-	const SECTION = 'mt-5 mb-2 text-sm font-semibold text-primary';
+	const SECTION = 'mt-5 mb-2 text-label-lg text-primary';
 </script>
 
 {#snippet chips(title: string, options: readonly string[], label: (v: string) => string, on: (v: string) => boolean, set: (v: string) => void)}
@@ -162,21 +162,21 @@
 
 <div class="mx-auto max-w-3xl px-6 pt-6 pb-10">
 	<div class="flex items-center gap-2">
-		<Button variant="ghost" size="icon-sm" aria-label={t('common.back')} onclick={() => history.back()}>
+		<Button variant="ghost" size="icon" aria-label={t('common.back')} onclick={() => history.back()}>
 			<HugeiconsIcon icon={ArrowLeft01Icon} class="h-5 w-5" />
 		</Button>
 		<h1 class="min-w-0 flex-1 truncate text-headline-sm font-bold">
 			{isNew ? t('vibes.create') : t('vibes.edit')}
 		</h1>
 		{#if !isNew}
-			<Button variant="ghost" size="icon-sm" aria-label={t('common.delete')} onclick={() => (confirmOpen = true)}>
+			<Button variant="ghost" size="icon" aria-label={t('common.delete')} onclick={() => (confirmOpen = true)}>
 				<HugeiconsIcon icon={Delete02Icon} class="h-5 w-5" />
 			</Button>
 		{/if}
 		<Button disabled={!canSave} onclick={save}>{t('common.save')}</Button>
 	</div>
 
-	<VibeScene spec={scene} class="mt-4 h-[220px] w-full rounded-2xl" />
+	<VibeScene spec={scene} class="mt-4 h-[220px] w-full rounded-xl" />
 
 	<h2 class={SECTION}>{t('vibes.name')}</h2>
 	<Input bind:value={name} placeholder={t('vibes.name')} />
@@ -237,7 +237,7 @@
 			<p class="mt-3 text-sm text-muted-foreground">{t('vibes.no_playlists')}</p>
 		{/if}
 		{#if picked && !pickedInLibrary}
-			<div class="mt-3 flex items-center gap-3 rounded-xl bg-primary/10 p-2">
+			<div class="mt-3 flex items-center gap-3 rounded-lg bg-secondary-container p-2 text-on-secondary-container">
 				<img src={thumb(picked.thumbnail, 96)} alt="" class="h-12 w-12 shrink-0 rounded-md bg-muted object-cover" />
 				<div class="min-w-0">
 					<p class="truncate text-sm font-medium">{picked.title || picked.id}</p>
@@ -255,9 +255,9 @@
 		<div class="mt-2 flex flex-col">
 			{#each results as item (item.id)}
 				<button
-					class="flex cursor-pointer items-center gap-3 rounded-lg p-2 text-left {picked?.id === item.id
-						? 'bg-primary/10'
-						: 'hover:bg-foreground/5'}"
+					class="flex cursor-pointer items-center gap-3 rounded-md p-2 text-left {picked?.id === item.id
+						? 'bg-secondary-container'
+						: 'state-layer'}"
 					onclick={() => pick(item)}
 				>
 					<img src={thumb(item.thumbnail, 96)} alt="" class="h-12 w-12 shrink-0 rounded-md bg-muted object-cover" />
