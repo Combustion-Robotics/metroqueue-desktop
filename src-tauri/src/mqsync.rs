@@ -14,7 +14,7 @@ use innertube::models::metadata::ArtistRun;
 use innertube::SongItem;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
-use tauri::{AppHandle, Manager};
+use tauri::{AppHandle, Emitter, Manager};
 
 use crate::db::Db;
 use crate::state::AppState;
@@ -147,6 +147,8 @@ pub fn import(app: &AppHandle, body: Value) -> anyhow::Result<Value> {
     if import_db(&db, &state, now)? {
         let app_state = app.state::<Arc<AppState>>().inner().clone();
         tauri::async_runtime::spawn(async move { app_state.apply_crossfade().await });
+        // The UI re-reads the ones it shows (the theme colours).
+        let _ = app.emit("shared-settings-changed", ());
     }
     Ok(serde_json::to_value(export_db(&db, i64::MAX, now))?)
 }
@@ -419,15 +421,18 @@ const WHITELIST: [(&str, Valid); 11] = [
 ];
 
 /// Whitelisted names this app has a setting for, and that setting's key. The rest are only kept
-/// and sent back. shortcut: the accent colour and pure black live in the UI's localStorage, out
-/// of reach here; map them once the theme moves to the backend.
-const MAPPED: [(&str, &str); 6] = [
+/// and sent back. The theme ones are the UI's M3 colour settings (theme.svelte.ts); the seed is
+/// stored as the phone stores it, a signed ARGB int.
+const MAPPED: [(&str, &str); 9] = [
     ("crossfadeEnabled", "crossfade"),
     ("mixMode", "mix_mode"),
     ("mixTransitionStyle", "mix_style"),
     ("crossfadeDurationFloat", "crossfade_secs"),
     ("crossfadeOnSkip", "crossfade_on_skip"),
     ("crossfadeGapless", "crossfade_gapless"),
+    ("pureBlack", "theme_pure_black"),
+    ("dynamicTheme", "theme_dynamic"),
+    ("selectedThemeColor", "theme_seed"),
 ];
 
 fn one_of(v: &Value, names: &[&str]) -> bool {
@@ -439,10 +444,12 @@ fn read(db: &Db, name: &str) -> Option<Value> {
     let (_, key) = MAPPED.iter().find(|(n, _)| *n == name)?;
     let raw = db.get_setting(key);
     Some(match name {
-        "crossfadeEnabled" | "crossfadeOnSkip" | "crossfadeGapless" => {
-            raw.map_or(Value::Null, |v| Value::Bool(v == "true"))
-        }
+        "crossfadeEnabled" | "crossfadeOnSkip" | "crossfadeGapless" | "pureBlack"
+        | "dynamicTheme" => raw.map_or(Value::Null, |v| Value::Bool(v == "true")),
         "mixMode" | "mixTransitionStyle" => raw.map_or(Value::Null, Value::String),
+        "selectedThemeColor" => {
+            raw.and_then(|v| v.parse::<i32>().ok()).map_or(Value::Null, |v| json!(v))
+        }
         _ => raw.and_then(|v| v.parse::<f64>().ok()).map_or(Value::Null, |v| json!(v)),
     })
 }
@@ -850,6 +857,8 @@ mod tests {
         assert!(import_db(&d, &phone, 60).unwrap());
         assert_eq!(d.get_setting("crossfade").as_deref(), Some("true"));
         assert_eq!(d.get_setting("crossfade_secs").as_deref(), Some("8"));
+        assert_eq!(d.get_setting("theme_seed").as_deref(), Some("-16776961"));
+        assert_eq!(d.get_setting("theme_pure_black"), None);
 
         let out = export_db(&d, 0, 70);
         assert_eq!(
@@ -875,6 +884,13 @@ mod tests {
         assert_eq!(export_db(&d, 0, 90).settings["crossfadeEnabled"].updated_at, 90);
         import_db(&d, &phone, 95).unwrap();
         assert_eq!(d.get_setting("crossfade").as_deref(), Some("false"));
+
+        // The UI's theme switches go out as the phone's booleans.
+        d.set_setting("theme_dynamic", "true");
+        assert_eq!(
+            export_db(&d, 0, 100).settings["dynamicTheme"],
+            Setting { value: json!(true), updated_at: 100 }
+        );
     }
 
     #[test]
