@@ -57,8 +57,8 @@
 
 	const GROUP = 'mb-7 last:mb-1';
 	const LABEL =
-		'mb-2 px-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground';
-	const CARD = 'divide-y divide-border/60 overflow-hidden rounded-xl border bg-card';
+		'mb-2 px-1 text-label-lg text-primary';
+	const CARD = 'flex flex-col gap-0.5 overflow-hidden rounded-xl';
 	const HINT = 'mb-2 px-1 max-w-prose text-xs leading-relaxed text-muted-foreground';
 
 	// Seeded once, then owned here (see DiscordSettings for why not a $derived).
@@ -360,7 +360,7 @@
 		<section class={GROUP}>
 			<!-- The account, the way Last.fm's own profile header shows it: avatar, name, and the
 			     three counts under it. -->
-			<div data-settings-card class="mb-2.5 overflow-hidden rounded-xl border bg-card">
+			<div data-settings-card class="mb-2.5 flex flex-col gap-0.5 overflow-hidden rounded-xl">
 				<div class="flex items-center gap-3.5 px-4 py-4">
 					<div
 						class="flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-muted ring-1 ring-border"
@@ -421,7 +421,7 @@
 				{/if}
 			</div>
 			<!-- ListenBrainz: same plays, second service. Token auth instead of the browser flow. -->
-			<div data-settings-card class="mb-2.5 overflow-hidden rounded-xl border bg-card">
+			<div data-settings-card class="mb-2.5 flex flex-col gap-0.5 overflow-hidden rounded-xl">
 				<div class="flex items-center gap-3.5 px-4 py-4">
 					<div
 						class="flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-muted ring-1 ring-border"
@@ -777,7 +777,7 @@
 		class="flex shrink-0 flex-col overflow-y-auto bg-muted/30 px-5 py-5 lg:w-[22rem] lg:border-l max-lg:border-t"
 	>
 		<div class="mb-2.5 flex items-center gap-2">
-			<h3 class="text-[11px] font-semibold tracking-[0.08em] text-muted-foreground uppercase">
+			<h3 class="text-label-lg text-primary">
 				{t('settings.discord.preview')}
 			</h3>
 			<span class="rounded-full bg-primary/12 px-1.5 py-0.5 text-[10px] font-semibold text-primary">

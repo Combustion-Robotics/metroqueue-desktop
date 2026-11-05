@@ -11,8 +11,8 @@
 	// MetroQueue's Mix section. The keys are the ones the phone syncs (mqsync.rs `MAPPED`).
 	const GROUP = 'mb-7 last:mb-1';
 	const LABEL =
-		'mb-2 px-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground';
-	const CARD = 'divide-y divide-border/60 overflow-hidden rounded-xl border bg-card';
+		'mb-2 px-1 text-label-lg text-primary';
+	const CARD = 'flex flex-col gap-0.5 overflow-hidden rounded-xl';
 	const MODES = ['OFF', 'CROSSFADE', 'SMART'] as const;
 	const STYLES = ['AUTO', 'FADE', 'FILTER', 'ECHO', 'RISE', 'CUT'] as const;
 

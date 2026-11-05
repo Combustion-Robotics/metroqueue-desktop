@@ -75,8 +75,8 @@
 	// every group looks identical without a wrapper component per row.
 	const GROUP = 'mb-7 last:mb-1';
 	const LABEL =
-		'mb-2 px-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground';
-	const CARD = 'divide-y divide-border/60 overflow-hidden rounded-xl border bg-card';
+		'mb-2 px-1 text-label-lg text-primary';
+	const CARD = 'flex flex-col gap-0.5 overflow-hidden rounded-xl';
 
 	let tab = $state<TabId>('general');
 	const currentTab = $derived(TABS.find((tb) => tb.id === tab) ?? TABS[0]);
@@ -465,7 +465,7 @@
 		<div class="flex min-w-0 h-[min(38rem,80vh)]">
 			<!-- Tab rail -->
 			<nav data-settings-nav class="flex w-52 shrink-0 flex-col border-r bg-muted/40 p-3">
-				<Dialog.Title class="px-3 pt-1 pb-4 font-heading text-base font-semibold">
+				<Dialog.Title class="px-3 pt-1 pb-4 text-title-lg">
 					{t('settings.title')}
 				</Dialog.Title>
 				<div class="flex flex-col gap-0.5">
@@ -501,7 +501,7 @@
 					data-settings-header
 					class="flex h-14 shrink-0 flex-col justify-center border-b px-6 pr-14"
 				>
-					<h2 class="text-sm font-semibold">{currentTab.label}</h2>
+					<h2 class="text-title-md">{currentTab.label}</h2>
 					<p class="truncate text-xs text-muted-foreground">{currentTab.hint}</p>
 				</header>
 
@@ -523,7 +523,7 @@
 						     first: two stacked dialogs would trap focus in the wrong one. -->
 						<button
 							type="button"
-							class="mb-5 inline-flex items-center gap-2 rounded-full border bg-muted/50 px-3 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+							class="state-layer mb-5 inline-flex h-8 items-center gap-2 rounded-sm border border-outline-variant px-3 text-label-md text-on-surface-variant"
 							onclick={() => {
 								ui.settingsOpen = false;
 								ui.shortcutsOpen = true;

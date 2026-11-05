@@ -63,7 +63,7 @@
 		{ key: 'reflections', min: 0, max: 100, step: 1 }
 	] as const;
 	type FineKey = (typeof FINE)[number]['key'];
-	const LABEL = 'mb-2 px-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground';
+	const LABEL = 'mb-2 px-1 text-label-lg text-primary';
 	// Each room's tail drawn as bars over 3.6 s, so a hall reads as longer than a room at a glance.
 	const TAILS = ROOM_DECAYS.map((decay) =>
 		Array.from({ length: 9 }, (_, i) =>
@@ -380,7 +380,7 @@
 			</div>
 
 			<h3 class={LABEL}>{t('dialogs.tempo_pitch.adjust')}</h3>
-			<div class="divide-y divide-border/60 overflow-hidden rounded-xl border bg-card">
+			<div data-settings-card class="flex flex-col gap-0.5 overflow-hidden rounded-xl">
 				<div class="px-4 py-4">
 					{@render valueRow(
 						t('dialogs.tempo_pitch.tempo'),

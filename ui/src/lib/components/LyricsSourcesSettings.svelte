@@ -77,7 +77,7 @@
 	}
 </script>
 
-<div data-settings-card class="overflow-hidden rounded-xl border bg-card">
+<div data-settings-card class="flex flex-col gap-0.5 overflow-hidden rounded-xl">
 	<div class="flex items-start justify-between gap-6 px-4 py-3.5">
 		<div class="min-w-0">
 			<span class="text-sm font-medium">{t('settings.playback.lyrics_sources')}</span>
@@ -97,7 +97,7 @@
 		</Button>
 	</div>
 
-	<div bind:this={list} role="list" class="divide-y divide-border/60 border-t border-border/60">
+	<div bind:this={list} role="list" class="divide-y divide-border/60">
 		{#each rows as row, i (row.id)}
 			{@const kind = SOURCE_KIND[row.id] ?? 'synced'}
 			<!-- The whole row drags, the grip says where to grab it. No `animate:flip`, for the reason

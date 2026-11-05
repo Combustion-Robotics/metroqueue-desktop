@@ -112,7 +112,7 @@
 {#snippet glowValue()}{@render percent('lyricsGlow')}{/snippet}
 {#snippet glowSlider()}{@render slider('lyricsGlow', t('settings.themes.lyrics_glow'), 0, 100)}{/snippet}
 
-<div class="divide-y divide-border/60 overflow-hidden rounded-xl border bg-card">
+<div data-settings-card class="flex flex-col gap-0.5 overflow-hidden rounded-xl">
 	{@render row({
 		title: t('settings.themes.enhanced_lyrics'),
 		badge: t('settings.themes.experimental'),

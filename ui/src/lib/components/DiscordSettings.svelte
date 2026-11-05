@@ -29,8 +29,8 @@
 
 	const GROUP = 'mb-7 last:mb-1';
 	const LABEL =
-		'mb-2 px-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground';
-	const CARD = 'divide-y divide-border/60 overflow-hidden rounded-xl border bg-card';
+		'mb-2 px-1 text-label-lg text-primary';
+	const CARD = 'flex flex-col gap-0.5 overflow-hidden rounded-xl';
 
 	// `prefs`, not the local `settings` record: the titlebar has its own Discord button, and two
 	// copies of the same flag meant toggling one left the other's indicator stale.
@@ -288,7 +288,7 @@
 		class="flex shrink-0 flex-col bg-muted/30 px-5 py-5 lg:w-[22rem] lg:border-l max-lg:border-t"
 	>
 		<div class="mb-2.5 flex items-center gap-2">
-			<h3 class="text-[11px] font-semibold tracking-[0.08em] text-muted-foreground uppercase">
+			<h3 class="text-label-lg text-primary">
 				{t('settings.discord.preview')}
 			</h3>
 			<span class="rounded-full bg-primary/12 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
