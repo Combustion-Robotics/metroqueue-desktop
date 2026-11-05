@@ -238,8 +238,8 @@
 		aria-pressed={videoSide() === on}
 		class="cursor-pointer rounded-full px-4 py-1 text-sm font-medium transition-colors {videoSide() ===
 		on
-			? 'bg-background text-foreground shadow-sm'
-			: 'text-muted-foreground hover:text-foreground'}"
+			? 'bg-secondary-container text-on-secondary-container'
+			: 'state-layer text-muted-foreground'}"
 	>
 		{label}
 	</button>
@@ -409,7 +409,7 @@
 						type="button"
 						onclick={() => (big = !big)}
 						class="flex cursor-pointer items-center justify-center text-muted-foreground transition-colors hover:text-foreground {stage
-							? 'size-8 rounded-full hover:bg-foreground/10'
+							? 'state-layer size-8 rounded-full'
 							: 'rounded-md p-1.5'}"
 						aria-label={big ? t('player.shrink_lyrics') : t('player.enlarge_lyrics')}
 						title={big ? t('player.shrink_lyrics') : t('player.enlarge_lyrics')}
@@ -449,7 +449,7 @@
      z-20 matches the highest a page uses for its own chrome (home's sticky mood chips) and wins the
      tie on DOM order, since <main> is static and its z-indexes land in the same stacking context.
      The player bar and the queue/lyrics panels come later/higher, so they still paint above.
-     ponytail: left offsets mirror Sidebar's w-16/lg:w-60 (and its manual collapse), keep in sync
+     ponytail: left offsets mirror Sidebar's w-20/lg:w-60 (and its manual collapse), keep in sync
      if those change. -->
 <!-- The player bar's chevron, E, Esc (and the new layout's collapse button) are the keyboard
      equivalents of clicking the backdrop, so this stays a plain region rather than a control
@@ -464,7 +464,7 @@
 	onpointerup={(e) => (releasedKeep = keeps(e.target))}
 	onclick={onBackdropClick}
 	data-np-view
-	class="absolute inset-y-0 left-16 right-0 z-20 flex overflow-hidden inert:bg-background {video.hole
+	class="absolute inset-y-0 left-20 right-0 z-20 flex overflow-hidden inert:bg-background {video.hole
 		? ''
 		: 'bg-background'} {stage ? '' : 'justify-center px-4 py-4 sm:px-6 sm:py-6 lg:px-10'} {ui.sidebarCollapsed
 		? ''
@@ -522,7 +522,7 @@
 					<button
 						type="button"
 						onclick={() => (np.open = false)}
-						class="flex size-9 cursor-pointer items-center justify-center justify-self-start rounded-full text-muted-foreground transition-colors hover:bg-foreground/10 hover:text-foreground"
+						class="flex size-9 cursor-pointer items-center justify-center justify-self-start rounded-full text-muted-foreground state-layer"
 						aria-label={t('player.minimize_player')}
 						title={t('player.minimize_player')}
 					>
@@ -601,7 +601,7 @@
 									<button
 										type="button"
 										onclick={toggleLike}
-										class="flex size-10 cursor-pointer items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-foreground/10 hover:text-foreground"
+										class="flex size-10 cursor-pointer items-center justify-center rounded-full text-muted-foreground state-layer"
 										aria-label={t('common.like')}
 										aria-pressed={playback.rating === 'like'}
 									>
@@ -629,7 +629,7 @@
 											video.cinema = true;
 											ui.theaterOpen = true;
 										}}
-										class="flex size-10 cursor-pointer items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-foreground/10 hover:text-foreground"
+										class="flex size-10 cursor-pointer items-center justify-center rounded-full text-muted-foreground state-layer"
 										aria-label={t('player.fullscreen_video')}
 										title="{t('player.fullscreen_video')} (F)"
 										data-np-keep
@@ -644,7 +644,7 @@
 										playlistId={playback.queue.sourceId}
 										queueIndex={playback.queue.currentIndex}
 										onAdd={() => openAddToPlaylist(currentSong!)}
-										triggerClass="flex size-10 cursor-pointer items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-foreground/10 hover:text-foreground"
+										triggerClass="flex size-10 cursor-pointer items-center justify-center rounded-full text-muted-foreground state-layer"
 									/>
 								{/if}
 							</div>

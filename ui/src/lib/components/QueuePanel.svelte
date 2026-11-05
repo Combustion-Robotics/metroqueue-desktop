@@ -22,7 +22,7 @@
 	transition:fly={{ x: 32, duration: 220, easing: cubicOut }}
 	class="absolute inset-y-0 right-0 z-30 flex h-full w-80 max-w-[80vw] flex-col border-l bg-card/95 shadow-2xl"
 >
-	<h2 data-side-panel-header class="border-b px-4 py-3 font-heading text-sm font-semibold"
+	<h2 data-side-panel-header class="px-5 pt-4 pb-3 text-title-lg"
 		>{t('queue.title')}</h2
 	>
 	<QueueList />

@@ -23,7 +23,7 @@
 		? 'lg:right-80'
 		: ''}"
 >
-	<h2 data-side-panel-header class="border-b px-4 py-3 font-heading text-sm font-semibold"
+	<h2 data-side-panel-header class="px-5 pt-4 pb-3 text-title-lg"
 		>{t('comments.title')}</h2
 	>
 	<CommentsView />

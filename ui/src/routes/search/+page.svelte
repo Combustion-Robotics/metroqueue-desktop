@@ -414,6 +414,7 @@
 	>
 		<form
 			id="search-form"
+			data-search-bar
 			class="relative max-w-2xl"
 			onsubmit={(e) => {
 				e.preventDefault();
@@ -422,12 +423,12 @@
 		>
 			<HugeiconsIcon
 				icon={Search01Icon}
-				class="pointer-events-none absolute left-4 top-1/2 z-10 h-5 w-5 -translate-y-1/2 text-muted-foreground"
+				class="pointer-events-none absolute left-4 top-1/2 z-10 h-6 w-6 -translate-y-1/2 text-on-surface"
 			/>
 			<SearchSuggest
 				bind:value={query}
 				placeholder={t('common.search_placeholder')}
-				inputClass="h-12 rounded-full bg-card/80 pl-12 text-base shadow-sm md:text-base"
+				inputClass="h-14 pl-14 text-base md:text-base"
 				onpick={() => {
 					lastQuery = query;
 					noteSearch(query);
@@ -436,7 +437,7 @@
 			{#if query}
 				<button
 					type="button"
-					class="absolute right-2 top-1/2 z-10 flex h-8 w-8 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-foreground/10 hover:text-foreground"
+					class="state-layer absolute right-2 top-1/2 z-10 flex size-10 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full text-on-surface-variant"
 					aria-label={t('a11y.clear_search')}
 					title={t('a11y.clear_search')}
 					onclick={(e) => {

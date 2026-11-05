@@ -106,17 +106,17 @@
 			>
 				<HugeiconsIcon icon={HistoryIcon} class="h-5 w-5" />
 			</button>
-			<form class="relative w-full max-w-xs" onsubmit={(e) => { e.preventDefault(); goSearch(); }}>
+			<form data-search-bar class="relative w-full max-w-xs" onsubmit={(e) => { e.preventDefault(); goSearch(); }}>
 				<HugeiconsIcon
 					icon={Search01Icon}
-					class="pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+					class="pointer-events-none absolute left-4 top-1/2 z-10 h-5 w-5 -translate-y-1/2 text-on-surface"
 				/>
 				<!-- The panel is wider than this field and hangs off its right edge: the rows carry
 				     artwork and two lines of text, which 20rem can't hold. -->
 				<SearchSuggest
 					bind:value={searchQuery}
 					placeholder={t('common.search')}
-					inputClass="rounded-full pl-9"
+					inputClass="h-12 pl-12 text-base md:text-base"
 					panelClass="right-0 w-[26rem]"
 				/>
 			</form>

@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
-	import { scale } from 'svelte/transition';
 	import { HugeiconsIcon } from '@hugeicons/svelte';
 	import {
 		Home01Icon,
@@ -103,16 +102,33 @@
 		else imp.open = true;
 	}
 	const wide = (cls: string) => (collapsed ? '' : cls);
+	const navItem = $derived(
+		`group flex flex-col items-center gap-1 py-1 text-label-md text-on-surface-variant ${wide('lg:py-0 lg:text-label-lg')}`
+	);
 </script>
+
+{#snippet navBody(icon: typeof Home01Icon, label: string)}
+	<span
+		data-nav-pill
+		class="relative flex h-8 w-14 items-center justify-center gap-3 rounded-full {wide(
+			'lg:h-14 lg:w-full lg:justify-start lg:px-4'
+		)}"
+	>
+		<span data-nav-indicator class="absolute inset-0 rounded-full bg-secondary"></span>
+		<HugeiconsIcon {icon} class="relative h-6 w-6 shrink-0" />
+		<span class="relative hidden truncate {wide('lg:inline')}">{label}</span>
+	</span>
+	<span class="max-w-full truncate {wide('lg:hidden')}">{label}</span>
+{/snippet}
 
 <aside
 	data-nav-rail
-	class="flex h-full w-16 shrink-0 flex-col border-r bg-sidebar p-3 text-sidebar-foreground {wide(
-		'lg:w-60'
+	class="flex h-full w-20 shrink-0 flex-col bg-sidebar px-2 py-3 text-sidebar-foreground {wide(
+		'lg:w-60 lg:px-3'
 	)}"
 >
-	<div class="flex items-center justify-center px-2 py-2 {wide('lg:justify-between')}">
-		<span class="hidden font-heading text-lg font-bold tracking-tight {wide('lg:block')}">MetroQueue</span>
+	<div class="flex items-center justify-center py-2 {wide('lg:justify-between lg:pl-2')}">
+		<span class="hidden font-heading text-title-lg font-bold {wide('lg:block')}">MetroQueue</span>
 		<!-- Column when collapsed: the two buttons don't fit side by side in the 64px rail. -->
 		<div class="flex items-center gap-1 {collapsed ? 'flex-col' : ''}">
 			<Button
@@ -144,7 +160,9 @@
 		</div>
 	</div>
 
-	<nav class="mt-2 flex flex-col gap-1">
+	<!-- M3 navigation rail, or the expanded drawer at lg+: the pill indicator springs out from the
+	     icon (layout.css `data-nav-indicator`). Collapsed, the label sits under the pill. -->
+	<nav class="mt-2 flex flex-col gap-1 {wide('lg:gap-0')}">
 		{#each nav as n (n.href)}
 			<a
 				href={n.href}
@@ -160,38 +178,13 @@
 				title={n.label}
 				data-nav-item
 				data-nav-active={isActive(n.href) ? '' : undefined}
-				class="group relative flex items-center justify-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors {wide(
-					'lg:justify-start'
-				)} {isActive(n.href)
-					? 'bg-primary/10 text-primary'
-					: 'text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'}"
+				class={navItem}
 			>
-				{#if isActive(n.href)}
-					<span
-						data-nav-indicator
-						transition:scale={{ duration: 200, start: 0.4 }}
-						class="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-r-full bg-primary"
-					></span>
-				{/if}
-				<HugeiconsIcon
-					icon={n.icon}
-					class="h-5 w-5 shrink-0"
-				/>
-				<span class="hidden {wide('lg:inline')}">{n.label}</span>
+				{@render navBody(n.icon, n.label)}
 			</a>
 		{/each}
-		<button
-			onclick={() => (ui.settingsOpen = true)}
-			title={t('nav.settings')}
-			class="group flex items-center justify-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent/50 hover:text-sidebar-foreground {wide(
-				'lg:justify-start'
-			)}"
-		>
-			<HugeiconsIcon
-				icon={Settings01Icon}
-				class="h-5 w-5 shrink-0"
-			/>
-			<span class="hidden {wide('lg:inline')}">{t('nav.settings')}</span>
+		<button onclick={() => (ui.settingsOpen = true)} title={t('nav.settings')} data-nav-item class={navItem}>
+			{@render navBody(Settings01Icon, t('nav.settings'))}
 		</button>
 	</nav>
 
@@ -199,14 +192,14 @@
 		<button
 			onclick={openImporting}
 			title={importing.label}
-			class="mt-2 flex flex-col gap-1.5 rounded-lg bg-primary/10 px-3 py-2 text-left text-xs font-medium text-primary transition-colors hover:bg-primary/15"
+			class="state-layer mt-2 flex flex-col gap-1.5 rounded-lg bg-primary-container px-3 py-2 text-left text-label-md text-on-primary-container"
 		>
 			<span class="flex items-center justify-center gap-3 {wide('lg:justify-start')}">
 				<HugeiconsIcon icon={SpotifyIcon} class="h-5 w-5 shrink-0" />
 				<span class="hidden truncate {wide('lg:inline')}">{importing.label}</span>
 			</span>
 			{#if importing.progress !== null}
-				<span class="block h-1 w-full overflow-hidden rounded-full bg-primary/15">
+				<span class="block h-1 w-full overflow-hidden rounded-full bg-on-primary-container/15">
 					<span
 						class="block h-full rounded-full bg-primary transition-[width] duration-300"
 						style="width: {Math.round(importing.progress * 100)}%"
@@ -219,8 +212,8 @@
 	<!-- Playlists. Hidden on the icon rail (needs labels; matches YTM's collapsed rail). flex-1 lets
 	     the list fill the space and scroll. Always there, signed out included: a playlist can be
 	     made on this machine without an account (#251). -->
-	<div data-nav-playlists class="mt-3 hidden min-h-0 flex-1 flex-col border-t pt-3 {wide('lg:flex')}">
-		<Button variant="outline" size="sm" class="mb-2 w-full gap-2" onclick={() => openNewPlaylist()}>
+	<div data-nav-playlists class="mt-3 hidden min-h-0 flex-1 flex-col border-t border-outline-variant pt-3 {wide('lg:flex')}">
+		<Button variant="secondary" class="mb-2 h-12 w-full gap-2 rounded-lg" onclick={() => openNewPlaylist()}>
 			<HugeiconsIcon icon={Add01Icon} class="h-4 w-4" /> {t('nav.new_playlist')}
 		</Button>
 		<!-- `relative z-0` gives the list its own stacking context, which keeps its scrollbar on
@@ -235,12 +228,12 @@
 						href={playlistHref(pl)}
 						title={pl.title}
 						data-nav-item
-						class="flex items-center gap-2.5 rounded-lg py-1.5 pl-2 pr-9 transition-colors hover:bg-sidebar-accent/50"
+						class="state-layer flex items-center gap-3 rounded-full py-1.5 pl-2 pr-9"
 					>
 						<div
 							class="relative h-10 w-10 shrink-0 overflow-hidden bg-muted {pl.kind === 'artist'
 								? 'rounded-full'
-								: 'rounded-md'}"
+								: 'rounded-sm'}"
 						>
 							{#if pl.thumbnail && pl.id !== ON_REPEAT_ID}
 								<img
@@ -274,11 +267,11 @@
 							</span>
 						{/if}
 						<div class="min-w-0 flex-1">
-							<div class="truncate text-[13px] font-medium">{pl.title}</div>
+							<div class="truncate text-label-lg">{pl.title}</div>
 							{#if pl.subtitle}
 								<!-- The rail keeps only the count, so a playlist on this machine says
 								     where it lives with an icon instead of the words. -->
-								<div class="flex items-center gap-1 text-xs text-muted-foreground">
+								<div class="flex items-center gap-1 text-body-sm text-on-surface-variant">
 									{#if isLocalPlaylist(pl.id)}
 										<HugeiconsIcon icon={ComputerIcon} class="h-3 w-3 shrink-0" />
 									{/if}

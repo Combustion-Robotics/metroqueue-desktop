@@ -122,7 +122,7 @@
 	onclick={openMenu}
 	title={auth.account?.signedIn ? (auth.account.name ?? t('nav.account')) : t('nav.sign_in')}
 	aria-expanded={menuOpen}
-	class="flex h-full cursor-pointer items-center gap-2 px-2.5 text-xs transition-colors hover:bg-muted aria-expanded:bg-muted"
+	class="state-layer flex h-8 cursor-pointer items-center gap-2 rounded-full px-2.5 text-label-lg aria-expanded:bg-secondary-container aria-expanded:text-on-secondary-container"
 >
 	{#if auth.account?.signedIn && auth.account.thumbnail}
 		<!-- max-width:none defeats Tailwind Preflight's `img{max-width:100%}`, which in a tight box

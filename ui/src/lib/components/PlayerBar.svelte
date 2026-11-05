@@ -165,7 +165,7 @@
 	data-playing={playback.paused ? 'false' : 'true'}
 	onpointerdown={(e) => (pressedControl = isControl(e.target))}
 	onclick={onBarClick}
-	class="flex items-center gap-2 border-t bg-card px-2 py-2.5 sm:gap-4 sm:px-4 sm:py-3"
+	class="mx-2 mb-2 flex items-center gap-2 bg-card px-2 py-2 sm:gap-4 sm:px-3"
 >
 	<!-- Now playing. data-ctx: right-clicking the cover or the title opens the ⋮ menu for the track
 	     that's playing (not the buttons beside them — those keep their own meaning). -->
@@ -177,13 +177,13 @@
 					src={thumb(playback.now.thumbnail, 120)}
 					alt=""
 					style="max-width:none"
-					class="h-12 w-12 shrink-0 rounded-lg object-cover"
+					class="h-14 w-14 shrink-0 rounded-md object-cover"
 					in:fade={{ duration: 250 }}
 				/>
 			{:else}
 				<div
 					data-player-art
-					class="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground/50"
+					class="flex h-14 w-14 shrink-0 items-center justify-center rounded-md bg-surface-container-highest text-on-surface-variant"
 				>
 					<HugeiconsIcon icon={MusicNote01Icon} class="h-5 w-5" />
 				</div>
@@ -194,7 +194,7 @@
 				{#snippet title()}
 					<Marquee
 						text={playback.now?.title ?? t('player.not_playing')}
-						class="text-sm font-medium"
+						class="text-title-md"
 					/>
 				{/snippet}
 				<!-- The button wraps the whole marquee rather than the text inside it: mid-scroll the
@@ -226,7 +226,7 @@
 				runs={playback.now?.artistRuns}
 				text={playback.now?.artists ?? ''}
 				marquee
-				class="block max-w-full text-xs text-muted-foreground"
+				class="block max-w-full text-body-md text-on-surface-variant"
 			/>
 		</div>
 		{#if playback.now}
@@ -286,7 +286,7 @@
 						playlistId={playback.queue.sourceId}
 						queueIndex={playback.queue.currentIndex}
 						onAdd={() => openAddToPlaylist(currentSong!)}
-						triggerClass="inline-flex size-8 cursor-pointer items-center justify-center rounded-md text-muted-foreground transition hover:bg-muted hover:text-foreground"
+						triggerClass="state-layer inline-flex size-8 cursor-pointer items-center justify-center rounded-full text-on-surface-variant"
 					/>
 				{/if}
 			</div>
@@ -329,10 +329,10 @@
 				</Button>
 			{/if}
 			<Button
-				variant="default"
+				variant="secondary"
 				size="icon"
 				data-play-button
-				class="rounded-full"
+				class="mx-1"
 				onclick={() => api.togglePause()}
 				aria-label={playback.paused ? t('player.play') : t('player.pause')}
 			>
@@ -342,7 +342,7 @@
 				icon={PauseIcon}
 				altIcon={PlayIcon}
 				showAlt={playback.paused}
-				class="h-5 w-5"
+				class="h-6 w-6"
 			/>
 			</Button>
 			{#if episode}
@@ -377,7 +377,7 @@
 				/>
 			</Button>
 		</div>
-		<div class="flex w-full max-w-md items-center gap-2 text-xs text-muted-foreground">
+		<div class="flex w-full max-w-md items-center gap-2 text-label-md text-on-surface-variant">
 			<!-- Fixed slots, or the seek bar twitches as the position ticks: DM Sans has no tabular
 			     figures, so `tabular-nums` does nothing there (#463). -->
 			<span class="min-w-[5ch] text-right tabular-nums">{fmt(shownPosition)}</span>

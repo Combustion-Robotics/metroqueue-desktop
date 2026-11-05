@@ -485,7 +485,7 @@
 		<button
 			type="button"
 			onclick={close}
-			class="flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-foreground/10 hover:text-foreground"
+			class="flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-full text-muted-foreground state-layer"
 			title="{t('player.exit_theater')} (Esc)"
 			aria-label={t('player.exit_theater')}
 		>
@@ -813,7 +813,7 @@
 					<button
 						type="button"
 						onclick={toggleLike}
-						class="flex size-10 cursor-pointer items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-foreground/10 hover:text-foreground"
+						class="flex size-10 cursor-pointer items-center justify-center rounded-full text-muted-foreground state-layer"
 						aria-label={t('common.like')}
 						aria-pressed={playback.rating === 'like'}
 					>
@@ -836,7 +836,7 @@
 						playlistId={playback.queue.sourceId}
 						queueIndex={playback.queue.currentIndex}
 						onAdd={() => openAddToPlaylist(currentSong!)}
-						triggerClass="flex size-10 cursor-pointer items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-foreground/10 hover:text-foreground"
+						triggerClass="flex size-10 cursor-pointer items-center justify-center rounded-full text-muted-foreground state-layer"
 					/>
 				{/if}
 				{#if canSwitch()}
@@ -852,15 +852,15 @@
 			<div class="flex items-center gap-2 xl:gap-3">
 				{#if episode}
 					<SpeedPicker
-						class="flex h-10 min-w-10 items-center justify-center rounded-full px-1 text-sm transition-colors hover:bg-foreground/10 aria-expanded:bg-foreground/10"
+						class="flex h-10 min-w-10 items-center justify-center rounded-full px-1 text-sm transition-colors state-layer aria-expanded:bg-secondary-container"
 					/>
 				{:else}
 					<button
 						type="button"
 						onclick={() => api.toggleShuffle()}
-						class="flex size-10 cursor-pointer items-center justify-center rounded-full transition-colors hover:bg-foreground/10 {shuffleOn
-							? 'text-primary'
-							: 'text-muted-foreground hover:text-foreground'}"
+						class="flex size-10 cursor-pointer items-center justify-center rounded-full state-layer {shuffleOn
+							? 'bg-secondary-container text-on-secondary-container'
+							: 'text-muted-foreground'}"
 						aria-label={t('player.shuffle')}
 						aria-pressed={shuffleOn}
 					>
@@ -870,7 +870,7 @@
 				<button
 					type="button"
 					onclick={() => api.prevTrack()}
-					class="flex cursor-pointer items-center justify-center rounded-full text-foreground/90 transition-colors hover:bg-foreground/10 hover:text-foreground {short.current
+					class="flex cursor-pointer items-center justify-center rounded-full text-foreground/90 state-layer {short.current
 						? 'size-10'
 						: 'size-12'}"
 					aria-label={t('player.previous')}
@@ -881,7 +881,7 @@
 					<button
 						type="button"
 						onclick={() => skipBy(-SKIP_SECS)}
-						class="flex size-10 cursor-pointer items-center justify-center rounded-full text-foreground/90 transition-colors hover:bg-foreground/10 hover:text-foreground"
+						class="flex size-10 cursor-pointer items-center justify-center rounded-full text-foreground/90 state-layer"
 						aria-label={t('player.skip_back', { seconds: SKIP_SECS })}
 						title={t('player.skip_back', { seconds: SKIP_SECS })}
 					>
@@ -893,7 +893,7 @@
 					data-theater-play
 					data-playing={playback.paused ? 'false' : 'true'}
 					onclick={() => api.togglePause()}
-					class="mx-1 flex cursor-pointer items-center justify-center rounded-full bg-primary text-primary-foreground transition-transform duration-150 hover:scale-[1.06] active:scale-95 {short.current
+					class="mx-1 flex cursor-pointer items-center justify-center rounded-full state-layer bg-primary text-primary-foreground {short.current
 						? 'size-12'
 						: 'size-16'}"
 					aria-label={playback.paused ? t('player.play') : t('player.pause')}
@@ -910,7 +910,7 @@
 					<button
 						type="button"
 						onclick={() => skipBy(SKIP_SECS)}
-						class="flex size-10 cursor-pointer items-center justify-center rounded-full text-foreground/90 transition-colors hover:bg-foreground/10 hover:text-foreground"
+						class="flex size-10 cursor-pointer items-center justify-center rounded-full text-foreground/90 state-layer"
 						aria-label={t('player.skip_forward', { seconds: SKIP_SECS })}
 						title={t('player.skip_forward', { seconds: SKIP_SECS })}
 					>
@@ -920,7 +920,7 @@
 				<button
 					type="button"
 					onclick={() => api.nextTrack()}
-					class="flex cursor-pointer items-center justify-center rounded-full text-foreground/90 transition-colors hover:bg-foreground/10 hover:text-foreground {short.current
+					class="flex cursor-pointer items-center justify-center rounded-full text-foreground/90 state-layer {short.current
 						? 'size-10'
 						: 'size-12'}"
 					aria-label={t('player.next')}
@@ -930,10 +930,10 @@
 				<button
 					type="button"
 					onclick={cycleRepeat}
-					class="flex size-10 cursor-pointer items-center justify-center rounded-full transition-colors hover:bg-foreground/10 {repeat !==
+					class="flex size-10 cursor-pointer items-center justify-center rounded-full state-layer {repeat !==
 					'off'
-						? 'text-primary'
-						: 'text-muted-foreground hover:text-foreground'}"
+						? 'bg-secondary-container text-on-secondary-container'
+						: 'text-muted-foreground'}"
 					aria-label={t('player.repeat_state', {
 						state:
 							repeat === 'off'
@@ -970,7 +970,7 @@
 				<div class="flex items-center gap-1" onwheel={wheelVolume}>
 					<button
 						type="button"
-						class="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-foreground/10 hover:text-foreground"
+						class="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-full text-muted-foreground state-layer"
 						onclick={toggleMute}
 						aria-label={playback.volume === 0 ? t('player.unmute') : t('player.mute')}
 					>
@@ -999,7 +999,7 @@
 					<button
 						type="button"
 						onclick={toggleCinema}
-						class="flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-foreground/10 hover:text-foreground"
+						class="flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-full text-muted-foreground state-layer"
 						aria-label={cinema ? t('player.exit_fullscreen_video') : t('player.fullscreen_video')}
 						title="{cinema ? t('player.exit_fullscreen_video') : t('player.fullscreen_video')} (F)"
 					>
@@ -1034,8 +1034,8 @@
 		aria-pressed={videoSide() === on}
 		class="cursor-pointer rounded-full px-3.5 py-1 text-sm font-medium transition-colors {videoSide() ===
 		on
-			? 'bg-background text-foreground shadow-sm'
-			: 'text-muted-foreground hover:text-foreground'}"
+			? 'bg-secondary-container text-on-secondary-container'
+			: 'state-layer text-muted-foreground'}"
 	>
 		{label}
 	</button>
@@ -1045,9 +1045,9 @@
 	<button
 		type="button"
 		onclick={toggle}
-		class="flex size-8 cursor-pointer items-center justify-center rounded-full transition-colors {on
-			? 'bg-foreground/10 text-primary'
-			: 'text-muted-foreground hover:bg-foreground/10 hover:text-foreground'}"
+		class="flex size-8 cursor-pointer items-center justify-center rounded-full state-layer {on
+			? 'bg-secondary-container text-on-secondary-container'
+			: 'text-muted-foreground'}"
 		aria-label={label}
 		aria-pressed={on}
 		title={label}

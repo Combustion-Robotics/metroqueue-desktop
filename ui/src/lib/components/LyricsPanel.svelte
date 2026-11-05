@@ -32,16 +32,16 @@
 	data-side-panel
 	transition:fly={{ x: 32, duration: 220, easing: cubicOut }}
 	class={expanded
-		? // ponytail: left offsets mirror Sidebar's w-16/lg:w-60 (and its manual collapse), right
+		? // ponytail: left offsets mirror Sidebar's w-20/lg:w-60 (and its manual collapse), right
 			// offset mirrors QueuePanel's w-80 — keep in sync if those change.
-			`absolute inset-y-0 left-16 right-0 z-30 flex h-full flex-col border-l bg-card/95 shadow-2xl ${ui.sidebarCollapsed ? '' : 'lg:left-60'} ${queueOpen ? 'lg:right-80' : ''}`
+			`absolute inset-y-0 left-20 right-0 z-30 flex h-full flex-col border-l bg-card/95 shadow-2xl ${ui.sidebarCollapsed ? '' : 'lg:left-60'} ${queueOpen ? 'lg:right-80' : ''}`
 		: `absolute inset-y-0 right-0 z-30 flex h-full w-80 max-w-[80vw] flex-col border-l bg-card/95 shadow-2xl ${queueOpen ? 'lg:right-80' : ''}`}
 >
-	<div data-side-panel-header class="flex items-center justify-between border-b px-4 py-3">
-		<h2 class="font-heading text-sm font-semibold">{t('lyrics.title')}</h2>
+	<div data-side-panel-header class="flex items-center justify-between pt-3 pr-3 pb-1 pl-5">
+		<h2 class="text-title-lg">{t('lyrics.title')}</h2>
 		<button
 			onclick={() => (expanded = !expanded)}
-			class="cursor-pointer text-muted-foreground transition-colors hover:text-foreground"
+			class="state-layer flex size-10 cursor-pointer items-center justify-center rounded-full text-on-surface-variant"
 			aria-label={expanded ? t('a11y.shrink_lyrics') : t('a11y.expand_lyrics')}
 		>
 			<!-- icon swap via altIcon/showAlt: `icon` is frozen at mount -->
