@@ -14,9 +14,10 @@ Transport, pairing and auth are in PROTOCOL.md.
 | Custom transitions | `files/mix_transitions.json` (`CustomTransitionRepository`) | per item last-writer-wins + tombstones, key = pair key |
 | Custom vibes | `files/vibes.json` (`CustomVibes`) | per item last-writer-wins + tombstones, key = vibe `id` |
 | Shared settings | DataStore prefs (whitelist below) | per key last-writer-wins |
+| Local playlists | Room tables `playlist` + `playlist_song_map`, songs in `song`; tombstones in `files/playlist_tombstones.json` | per playlist last-writer-wins + tombstones, key = playlist `id` (section 8) |
 
 Not synced: deletions of history ("clear history" stays local), the YouTube account, liked songs /
-playlists (those are the TV's library profiles, `/api/profile`), any other setting.
+YouTube playlists (those are the TV's library profiles, `/api/profile`), any other setting.
 
 ## 2. Endpoints (served by the receiver)
 
@@ -28,7 +29,7 @@ Both endpoints need a **paired** bearer token (`Authorization: Bearer <token>`) 
 ### `GET /api/sync?since=<epoch ms>`
 
 Returns the receiver's `SyncState` (section 3). `since` (default `0`) only limits `history` to plays
-with `timestamp >= since`; transitions, vibes, settings and tombstones are always complete (they
+with `timestamp >= since`; transitions, vibes, settings, playlists and tombstones are always complete (they
 are small). `history` holds at most the **5000 newest** plays from `since` on.
 
 ### `POST /api/sync`
@@ -69,7 +70,15 @@ ties) and answers `204`.
   "deleted": {
     "transitions": {"aaa\nccc": 1762200000000},
     "vibes": {"custom_77aa...": 1762150000000}
-  }
+  },
+  "playlists": [
+    {"id": "LPabcdEFGH", "name": "Road trip", "updatedAt": 1762300000000, "deleted": false,
+     "thumbnailUrl": null,
+     "songs": [{"id": "dQw4w9WgXcQ", "title": "Song", "artists": [{"id": "UC...", "name": "Artist"}],
+                "album": {"id": "MPREb_...", "title": "Album"}, "thumbnail": "https://...",
+                "durationMs": 213000, "local": false}]},
+    {"id": "LPDq3...", "name": "", "updatedAt": 1762310000000, "deleted": true, "thumbnailUrl": null, "songs": []}
+  ]
 }
 ```
 
@@ -88,6 +97,7 @@ received (it may not know every field yet) and send them back unchanged.
 | `vibes` | `Vibe[]` | `[]` | **all** custom vibes (ids start with `custom_`; presets are never sent) |
 | `settings` | `{name: SyncSetting}` | `{}` | the whitelisted settings (section 5) |
 | `deleted` | `{transitions: {key: ms}, vibes: {id: ms}}` | empty | tombstones: when each item was deleted |
+| `playlists` | `SyncPlaylist[]` | `[]` | **all** local playlists, then a tombstone per deleted one (section 8). Added later in v1; older peers ignore it. |
 
 `SyncHistoryItem`: `songId` (string, required), `timestamp` (long, required, when the play
 happened), `playTime` (long ms listened, default `0`).
@@ -195,3 +205,37 @@ phone                                         receiver
 - `GET /api/sync`: send everything as in section 3; history newest first, max 5000, from `since`.
 - `POST /api/sync`: validate, merge with "local wins ties", insert new plays (creating songs from
   `songs`), answer `204`.
+
+## 8. Playlists
+
+Only **local, user-editable** playlists sync. Phone: `playlist` rows with `browseId == null` and
+`isEditable == true`, except the built-in `LP_LIKED`, `LP_DOWNLOADED`, `LP_WEEKLY_MOST` and
+`LP_MONTHLY_MOST`. YouTube playlists are not included; they sync through the account.
+
+`SyncPlaylist`: `id` (string, required), `name` (default `""`), `updatedAt` (long, default `0`),
+`deleted` (default `false`), `thumbnailUrl` (string?, default `null`), `songs` (ordered
+`SyncPlaylistSong[]`, default `[]`).
+- `id`: a phone-created playlist keeps the phone's `playlist.id` (`LP` + 8 letters); a
+  desktop-created one is `LPD` + 22 random `[A-Za-z0-9]`.
+- `updatedAt`: the last change of the name, the songs or their order, or the cover. The phone uses
+  `playlist.lastUpdateTime`, which every edit (rename, add, remove, reorder, cover) sets to now.
+- `thumbnailUrl`: a custom cover, only `http(s)` URLs. A cover the phone picked from its gallery is
+  a `content://` URI and is sent as `null`; applying a remote copy with `null` keeps such a cover.
+- `deleted: true` is a tombstone: `updatedAt` is the deletion time and the other fields are empty.
+
+`SyncPlaylistSong`: `id` (YouTube video id, or the sender's local-file id when `local` is `true`),
+`title` (default `""`), `artists` (`[{id?, name}]`), `album` (`{id?, title}` or `null`),
+`thumbnail` (string?), `durationMs` (long, default `0` = unknown), `local` (default `false`).
+
+Merge: `SyncMerge.playlists`, i.e. section 4 per playlist `id`, with the tombstones taken from the
+list (`deleted: true`, time = `updatedAt`). The newer `updatedAt` wins, the receiver on a tie, and
+the winner **replaces** the loser's whole playlist (name, ordered songs, cover); there is no
+per-song merge. A deletion beats changes made at the same millisecond or earlier. Tombstones are
+capped to the 500 newest. A remote playlist whose `id` names a playlist that is not synced here
+(a YouTube or built-in one) is ignored.
+
+Apply: create or update the playlist (new ones are added to the library), replace its songs in the
+received order, set its `updatedAt` to the winner's, and delete playlists the merge dropped.
+Songs this device doesn't know are created from the entry's metadata, so the playlist shows without
+a network fetch; known songs are left as they are. Local-file songs of the other device stay in
+the list (a device that can't play them should grey them out or skip them).

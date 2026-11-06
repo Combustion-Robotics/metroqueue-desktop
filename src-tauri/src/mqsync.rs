@@ -434,6 +434,15 @@ fn fingerprint<'a>(name: &'a str, video_ids: impl Iterator<Item = &'a str>) -> S
     std::iter::once(name).chain(video_ids).collect::<Vec<_>>().join("\n")
 }
 
+/// A synced playlist's id (`LP` + 8 from a phone, `LPD` + 22 from here), not a YouTube or
+/// built-in one (`PL…`, `VL…`, `LM`, `LP_LIKED`), which are ignored.
+fn is_playlist_id(id: &str) -> bool {
+    id.len() <= 64
+        && id
+            .strip_prefix("LP")
+            .is_some_and(|rest| !rest.is_empty() && rest.bytes().all(|b| b.is_ascii_alphanumeric()))
+}
+
 fn is_web(url: &str) -> bool {
     url.starts_with("https://") || url.starts_with("http://")
 }
@@ -507,7 +516,7 @@ fn import_playlists(db: &Db, remote: &[SyncPlaylist], now: i64) -> anyhow::Resul
     let (local, mut store) = stamp_playlists(db, now);
     let mut theirs = Map::new();
     let mut their_deleted = Map::new();
-    for p in remote.iter().filter(|p| !p.id.trim().is_empty() && p.id.len() <= 64) {
+    for p in remote.iter().filter(|p| is_playlist_id(&p.id)) {
         if p.deleted {
             let at = their_deleted.entry(p.id.clone()).or_insert(p.updated_at);
             *at = (*at).max(p.updated_at);
@@ -579,13 +588,17 @@ fn apply_playlists(
             };
             rows.push((video_id, json));
         }
+        // A cover the sender can't send (not http(s)) arrives as null and keeps the one known here.
+        let thumbnail_url = p.thumbnail_url.clone().filter(|u| is_web(u)).or_else(|| {
+            key.and_then(|key| store.known.get(&key)).and_then(|k| k.thumbnail_url.clone())
+        });
         let key = db.replace_local_playlist(key, &p.name, &rows, p.updated_at / 1000)?;
         store.known.insert(
             key,
             KnownPlaylist {
                 id: id.clone(),
                 updated_at: p.updated_at,
-                thumbnail_url: p.thumbnail_url.clone().filter(|u| is_web(u)),
+                thumbnail_url,
                 seen: fingerprint(&p.name, rows.iter().map(|(id, _)| id.as_str())),
             },
         );
@@ -1297,7 +1310,9 @@ mod tests {
             {"id": "LPphone1", "name": "From phone", "updatedAt": 50_000,
              "songs": [{"id": "ddddddddddd", "title": "D"}]},
             {"id": "LPdead", "deleted": true, "updatedAt": 40_000},
-            {"id": "", "name": "no id", "updatedAt": 1}
+            {"id": "", "name": "no id", "updatedAt": 1},
+            {"id": "PLyoutube", "name": "YouTube's", "updatedAt": 1},
+            {"id": "LP_LIKED", "name": "Built in", "updatedAt": 1}
         ]}));
         assert!(import_playlists(&d, &phone.playlists, 2_000).unwrap());
 
@@ -1347,9 +1362,17 @@ mod tests {
         assert!(!import_playlists(&d, &phone.playlists, 4_000).unwrap());
         assert_eq!(export_db(&d, 0, 5_000).playlists, out);
 
-        // A newer tombstone from the phone takes a playlist made there.
+        // A newer copy without a cover keeps the known one.
+        let phone = state(json!({"playlists": [
+            {"id": id("Old name"), "name": "Newer", "updatedAt": 300_000, "thumbnailUrl": null}
+        ]}));
+        assert!(import_playlists(&d, &phone.playlists, 5_500).unwrap());
+        let p = export_db(&d, 0, 5_600).playlists.into_iter().find(|p| p.name == "Newer").unwrap();
+        assert_eq!(p.thumbnail_url.as_deref(), Some("https://cover"));
+
+        // A tombstone from the phone takes a playlist changed at the same millisecond.
         let phone =
-            state(json!({"playlists": [{"id": "LPphone1", "deleted": true, "updatedAt": 60_000}]}));
+            state(json!({"playlists": [{"id": "LPphone1", "deleted": true, "updatedAt": 50_000}]}));
         assert!(import_playlists(&d, &phone.playlists, 6_000).unwrap());
         assert!(d.local_playlist(from_phone.id).is_none());
     }
