@@ -1175,7 +1175,7 @@ impl Db {
     fn query_local_playlists(&self, id: Option<i64>) -> Vec<LocalPlaylist> {
         let conn = self.0.lock().unwrap();
         let sql = format!(
-            "SELECT p.id, p.title, p.description,
+            "SELECT p.id, p.title, p.description, p.updated_at,
                     (SELECT COUNT(*) FROM local_playlist_tracks t WHERE t.playlist_id = p.id),
                     (SELECT song_json FROM local_playlist_tracks t WHERE t.playlist_id = p.id
                      ORDER BY t.pos, t.id LIMIT 1)
@@ -1188,8 +1188,9 @@ impl Db {
                 id: r.get(0)?,
                 title: r.get(1)?,
                 description: r.get(2)?,
-                count: r.get(3)?,
-                first_song: r.get(4)?,
+                updated_at: r.get(3)?,
+                count: r.get(4)?,
+                first_song: r.get(5)?,
             })
         };
         let mut out = Vec::new();
@@ -1348,6 +1349,62 @@ impl Db {
             return Err(rusqlite::Error::QueryReturnedNoRows);
         }
         Ok(())
+    }
+
+    /// Create (`id` None) or overwrite a playlist: `title` and exactly `rows` `(video_id,
+    /// song_json)`, in order, a track that stays keeping its `added_at`. One transaction, for
+    /// MetroQueue sync, where the newer copy replaces the whole playlist.
+    pub fn replace_local_playlist(
+        &self,
+        id: Option<i64>,
+        title: &str,
+        rows: &[(String, String)],
+        now: i64,
+    ) -> rusqlite::Result<i64> {
+        let mut conn = self.0.lock().unwrap();
+        let tx = conn.transaction()?;
+        let id = match id {
+            Some(id) => {
+                let n = tx.execute(
+                    "UPDATE local_playlists SET title = ?1, updated_at = ?2 WHERE id = ?3",
+                    rusqlite::params![title, now, id],
+                )?;
+                if n == 0 {
+                    return Err(rusqlite::Error::QueryReturnedNoRows);
+                }
+                id
+            }
+            None => {
+                tx.execute(
+                    "INSERT INTO local_playlists(title, created_at, updated_at) VALUES(?1, ?2, ?2)",
+                    rusqlite::params![title, now],
+                )?;
+                tx.last_insert_rowid()
+            }
+        };
+        let added: std::collections::HashMap<String, i64> = {
+            let mut stmt = tx.prepare(
+                "SELECT video_id, added_at FROM local_playlist_tracks WHERE playlist_id = ?1",
+            )?;
+            let rows = stmt.query_map([id], |r| Ok((r.get(0)?, r.get(1)?)))?;
+            rows.collect::<rusqlite::Result<_>>()?
+        };
+        tx.execute("DELETE FROM local_playlist_tracks WHERE playlist_id = ?1", [id])?;
+        for (pos, (video_id, json)) in rows.iter().enumerate() {
+            tx.execute(
+                "INSERT OR IGNORE INTO local_playlist_tracks(playlist_id, video_id, song_json, \
+                 added_at, pos) VALUES(?1, ?2, ?3, ?4, ?5)",
+                rusqlite::params![
+                    id,
+                    video_id,
+                    json,
+                    added.get(video_id).copied().unwrap_or(now),
+                    pos as i64
+                ],
+            )?;
+        }
+        tx.commit()?;
+        Ok(id)
     }
 
     pub fn delete_local_playlist(&self, id: i64) -> rusqlite::Result<()> {
@@ -1594,6 +1651,8 @@ pub struct LocalPlaylist {
     pub id: i64,
     pub title: String,
     pub description: String,
+    /// Unix seconds of the last change.
+    pub updated_at: i64,
     pub count: i64,
     /// The first track's stored `SongItem`, whose artwork stands in for a cover nobody picked.
     pub first_song: Option<String>,

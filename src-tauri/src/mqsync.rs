@@ -6,8 +6,11 @@
 //! Plays live in `listens` (the stats page and On Repeat read them too). Transitions, vibes, the
 //! settings' change times and the tombstones are JSON rows in `settings`, kept for the Mix and
 //! Vibe phases: [`transitions`] and [`mq_vibes`] read them.
+//!
+//! Local playlists (`local_playlists`) sync too, per PLAYLIST-SYNC (an addition to SYNC.md v1):
+//! their sync ids, `updatedAt`s and tombstones are the `mq_playlists` row.
 
-use std::collections::{BTreeMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet};
 use std::sync::{Arc, Mutex};
 
 use innertube::models::metadata::ArtistRun;
@@ -27,6 +30,11 @@ const TRANSITIONS_KEY: &str = "mq_transitions";
 const VIBES_KEY: &str = "mq_vibes";
 const SETTINGS_KEY: &str = "mq_settings";
 const DELETED_KEY: &str = "mq_deleted";
+const PLAYLISTS_KEY: &str = "mq_playlists";
+
+/// The videoId prefix of a phone's local file in a synced playlist. Kept so the playlist goes back
+/// whole; the player skips it (`AppState::resolve`).
+pub const PHONE_SONG_PREFIX: &str = "MQLOCAL:";
 
 /// Imports and setting stamps read, merge and write several rows; one at a time.
 static LOCK: Mutex<()> = Mutex::new(());
@@ -131,6 +139,59 @@ struct SyncState {
     vibes: Vec<Value>,
     settings: Map<Setting>,
     deleted: Tombstones,
+    playlists: Vec<SyncPlaylist>,
+}
+
+/// A local playlist on the wire. `deleted` makes it a tombstone, deleted at `updated_at`.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+struct SyncPlaylist {
+    id: String,
+    name: String,
+    updated_at: i64,
+    deleted: bool,
+    thumbnail_url: Option<String>,
+    songs: Vec<PlaylistSong>,
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+struct PlaylistSong {
+    id: String,
+    title: String,
+    artists: Vec<Artist>,
+    album: Option<Album>,
+    thumbnail: Option<String>,
+    duration_ms: i64,
+    /// A file on the sending device: `id` is its id there.
+    local: bool,
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+struct Album {
+    id: Option<String>,
+    title: String,
+}
+
+/// What sync knows about the local playlists, keyed by their `local_playlists` id.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+struct PlaylistStore {
+    known: BTreeMap<i64, KnownPlaylist>,
+    /// Sync id -> when it was deleted.
+    deleted: Map<i64>,
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+struct KnownPlaylist {
+    id: String,
+    updated_at: i64,
+    /// The phone's cover, kept only to send back: covers here are local files.
+    thumbnail_url: Option<String>,
+    /// [`fingerprint`] when `updated_at` was set; a different one is an edit made here since.
+    seen: String,
 }
 
 /// This machine's state, history from `since_ms` on (`GET /api/sync`).
@@ -144,10 +205,13 @@ pub fn import(app: &AppHandle, body: Value) -> anyhow::Result<Value> {
     let state: SyncState = serde_json::from_value(body)?;
     let db = db(app);
     let now = now_ms();
-    if import_db(&db, &state, now)? {
+    let settings_changed = import_db(&db, &state, now)?;
+    if settings_changed {
         let app_state = app.state::<Arc<AppState>>().inner().clone();
         tauri::async_runtime::spawn(async move { app_state.apply_crossfade().await });
-        // The UI re-reads the ones it shows (the theme colours).
+    }
+    if import_playlists(&db, &state.playlists, now)? || settings_changed {
+        // The UI re-reads what it shows (the theme colours, the local playlists).
         let _ = app.emit("shared-settings-changed", ());
     }
     Ok(serde_json::to_value(export_db(&db, i64::MAX, now))?)
@@ -183,6 +247,17 @@ pub fn mq_save_vibe(app: AppHandle, vibe: Value) -> Result<(), String> {
 #[tauri::command]
 pub fn mq_delete_vibe(app: AppHandle, id: String) {
     delete_vibe(&db(&app), &id, now_ms());
+}
+
+/// Leaves a tombstone for a local playlist deleted here, so the phone deletes its copy too.
+pub fn local_playlist_deleted(db: &Db, key: i64) {
+    let _guard = LOCK.lock().unwrap();
+    let mut store: PlaylistStore = load(db, PLAYLISTS_KEY);
+    if let Some(known) = store.known.remove(&key) {
+        store.deleted.insert(known.id, now_ms());
+        store.deleted = cap(store.deleted);
+        save(db, PLAYLISTS_KEY, &store);
+    }
 }
 
 fn save_vibe(db: &Db, mut vibe: Value, now: i64) -> anyhow::Result<()> {
@@ -238,6 +313,10 @@ fn export_db(db: &Db, since_ms: i64, now: i64) -> SyncState {
         let _guard = LOCK.lock().unwrap();
         stamp_settings(db, now)
     };
+    let (playlists, store) = {
+        let _guard = LOCK.lock().unwrap();
+        stamp_playlists(db, now)
+    };
     let mut history = Vec::new();
     let mut songs = Vec::new();
     let mut seen = HashSet::new();
@@ -257,6 +336,15 @@ fn export_db(db: &Db, since_ms: i64, now: i64) -> SyncState {
         vibes: load(db, VIBES_KEY),
         settings,
         deleted: load(db, DELETED_KEY),
+        playlists: playlists
+            .into_values()
+            .chain(store.deleted.into_iter().map(|(id, at)| SyncPlaylist {
+                id,
+                updated_at: at,
+                deleted: true,
+                ..SyncPlaylist::default()
+            }))
+            .collect(),
     }
 }
 
@@ -337,6 +425,208 @@ fn insert_history(db: &Db, state: &SyncState) -> anyhow::Result<()> {
         db.insert_synced_plays(&rows)?;
     }
     Ok(())
+}
+
+// --- local playlists --------------------------------------------------------------------------
+
+/// What an edit here changes: the name and the ordered tracks.
+fn fingerprint<'a>(name: &'a str, video_ids: impl Iterator<Item = &'a str>) -> String {
+    std::iter::once(name).chain(video_ids).collect::<Vec<_>>().join("\n")
+}
+
+fn is_web(url: &str) -> bool {
+    url.starts_with("https://") || url.starts_with("http://")
+}
+
+fn new_playlist_id() -> String {
+    use rand::Rng;
+    let tail: String = rand::thread_rng()
+        .sample_iter(&rand::distributions::Alphanumeric)
+        .take(22)
+        .map(char::from)
+        .collect();
+    format!("LPD{tail}")
+}
+
+/// This machine's playlists by sync id, the store brought up to date first: a new playlist gets an
+/// id, one edited here its edit time, one deleted outside [`local_playlist_deleted`] a tombstone.
+/// Call with [`LOCK`] held.
+fn stamp_playlists(db: &Db, now: i64) -> (Map<SyncPlaylist>, PlaylistStore) {
+    let stored: PlaylistStore = load(db, PLAYLISTS_KEY);
+    let mut store = PlaylistStore { known: BTreeMap::new(), deleted: stored.deleted.clone() };
+    let mut out = Map::new();
+    for p in db.local_playlists() {
+        let songs: Vec<SongItem> = db
+            .local_playlist_tracks(p.id)
+            .iter()
+            .filter_map(|(_, json, _)| serde_json::from_str(json).ok())
+            .collect();
+        let seen = fingerprint(&p.title, songs.iter().map(|s| s.video_id.as_str()));
+        let edited = p.updated_at.saturating_mul(1000);
+        let known = match stored.known.get(&p.id) {
+            Some(k) if k.seen == seen => k.clone(),
+            Some(k) => {
+                KnownPlaylist { updated_at: edited.max(k.updated_at + 1), seen, ..k.clone() }
+            }
+            None => KnownPlaylist {
+                id: new_playlist_id(),
+                updated_at: edited,
+                thumbnail_url: None,
+                seen,
+            },
+        };
+        out.insert(
+            known.id.clone(),
+            SyncPlaylist {
+                id: known.id.clone(),
+                name: p.title,
+                updated_at: known.updated_at,
+                deleted: false,
+                thumbnail_url: known.thumbnail_url.clone(),
+                songs: songs.iter().map(to_playlist_song).collect(),
+            },
+        );
+        store.known.insert(p.id, known);
+    }
+    for (key, known) in &stored.known {
+        if !store.known.contains_key(key) {
+            store.deleted.insert(known.id.clone(), now);
+        }
+    }
+    store.deleted = cap(store.deleted);
+    if store != stored {
+        save(db, PLAYLISTS_KEY, &store);
+    }
+    (out, store)
+}
+
+/// Merges the phone's playlists into this machine's, local winning ties, and writes the outcome to
+/// `local_playlists`. True when a playlist here changed.
+fn import_playlists(db: &Db, remote: &[SyncPlaylist], now: i64) -> anyhow::Result<bool> {
+    let _guard = LOCK.lock().unwrap();
+    let (local, mut store) = stamp_playlists(db, now);
+    let mut theirs = Map::new();
+    let mut their_deleted = Map::new();
+    for p in remote.iter().filter(|p| !p.id.trim().is_empty() && p.id.len() <= 64) {
+        if p.deleted {
+            let at = their_deleted.entry(p.id.clone()).or_insert(p.updated_at);
+            *at = (*at).max(p.updated_at);
+        } else {
+            theirs.insert(p.id.clone(), p.clone());
+        }
+    }
+    let (merged, deleted) =
+        merge(local.clone(), &store.deleted, theirs, &their_deleted, false, |p| p.updated_at);
+    store.deleted = deleted;
+    let result = apply_playlists(db, &local, &merged, &mut store);
+    // Saved even after a failed write, so what did land keeps its sync id.
+    save(db, PLAYLISTS_KEY, &store);
+    result
+}
+
+fn apply_playlists(
+    db: &Db,
+    local: &Map<SyncPlaylist>,
+    merged: &Map<SyncPlaylist>,
+    store: &mut PlaylistStore,
+) -> anyhow::Result<bool> {
+    let keys: Map<i64> = store.known.iter().map(|(&key, k)| (k.id.clone(), key)).collect();
+    let mut changed = false;
+    for id in local.keys().filter(|id| !merged.contains_key(*id)) {
+        let key = keys[id];
+        db.delete_local_playlist(key)?;
+        crate::commands::forget_local_cover(db, key);
+        store.known.remove(&key);
+        changed = true;
+    }
+    // This library's files, the only `LOCAL:` ids taken as they come: the player opens those paths.
+    let mut files: Option<HashSet<String>> = None;
+    for (id, p) in merged.iter().filter(|(id, p)| local.get(*id) != Some(*p)) {
+        let key = keys.get(id).copied();
+        let old: HashMap<String, String> = key
+            .map(|key| db.local_playlist_tracks(key))
+            .unwrap_or_default()
+            .into_iter()
+            .filter_map(|(_, json, _)| {
+                Some((serde_json::from_str::<SongItem>(&json).ok()?.video_id, json))
+            })
+            .collect();
+        let mut seen = HashSet::new();
+        let mut rows = Vec::new();
+        for s in p.songs.iter().filter(|s| !s.id.trim().is_empty()) {
+            let ours = crate::local::is_local_song(&s.id)
+                && files
+                    .get_or_insert_with(|| {
+                        db.local_tracks(None)
+                            .iter()
+                            .map(|t| format!("{}{}", crate::local::SONG_PREFIX, t.path))
+                            .collect()
+                    })
+                    .contains(&s.id);
+            let video_id = if (s.local || crate::local::is_local_song(&s.id)) && !ours {
+                format!("{PHONE_SONG_PREFIX}{}", s.id)
+            } else {
+                s.id.clone()
+            };
+            // shortcut: a playlist holds a track once here (UNIQUE), so a phone's repeats are
+            // dropped; lift it if the schema ever allows duplicates.
+            if !seen.insert(video_id.clone()) {
+                continue;
+            }
+            let json = match old.get(&video_id) {
+                Some(json) => json.clone(),
+                None => serde_json::to_string(&from_playlist_song(s, video_id.clone()))?,
+            };
+            rows.push((video_id, json));
+        }
+        let key = db.replace_local_playlist(key, &p.name, &rows, p.updated_at / 1000)?;
+        store.known.insert(
+            key,
+            KnownPlaylist {
+                id: id.clone(),
+                updated_at: p.updated_at,
+                thumbnail_url: p.thumbnail_url.clone().filter(|u| is_web(u)),
+                seen: fingerprint(&p.name, rows.iter().map(|(id, _)| id.as_str())),
+            },
+        );
+        changed = true;
+    }
+    Ok(changed)
+}
+
+fn to_playlist_song(song: &SongItem) -> PlaylistSong {
+    let t = song_to_track(song);
+    let (id, local) = match song.video_id.strip_prefix(PHONE_SONG_PREFIX) {
+        Some(id) => (id.to_owned(), true),
+        None => (t.id, crate::local::is_local_song(&song.video_id)),
+    };
+    PlaylistSong {
+        id,
+        title: t.title,
+        artists: if t.artists.is_empty() && !t.artist.is_empty() {
+            vec![Artist { id: None, name: t.artist }]
+        } else {
+            t.artists
+        },
+        album: t.album_title.map(|title| Album { id: t.album_id, title }),
+        thumbnail: t.thumb.filter(|u| is_web(u)),
+        duration_ms: t.duration,
+        local,
+    }
+}
+
+fn from_playlist_song(s: &PlaylistSong, video_id: String) -> SongItem {
+    track_to_song(&Track {
+        id: video_id,
+        title: s.title.clone(),
+        artist: s.artists.iter().map(|a| a.name.as_str()).collect::<Vec<_>>().join(", "),
+        duration: s.duration_ms,
+        thumb: s.thumbnail.clone().filter(|u| is_web(u)),
+        artists: s.artists.clone(),
+        album_id: s.album.as_ref().and_then(|a| a.id.clone()),
+        album_title: s.album.as_ref().map(|a| a.title.clone()),
+        ..Track::default()
+    })
 }
 
 // --- merge rules (TvSync.kt `SyncMerge`) ----------------------------------------------------
@@ -916,6 +1206,152 @@ mod tests {
             export_db(&d, 0, 70).settings["mixTransitionStyle"],
             Setting { value: json!("RISE"), updated_at: 70 }
         );
+    }
+
+    fn song_json(id: &str) -> (String, String) {
+        let song = SongItem {
+            video_id: id.into(),
+            title: format!("T{id}"),
+            artists: "A".into(),
+            ..SongItem::default()
+        };
+        (id.to_owned(), serde_json::to_string(&song).unwrap())
+    }
+
+    fn track_ids(d: &Db, key: i64) -> Vec<String> {
+        d.local_playlist_tracks(key)
+            .iter()
+            .map(|(_, json, _)| serde_json::from_str::<SongItem>(json).unwrap().video_id)
+            .collect()
+    }
+
+    #[test]
+    fn local_playlists_get_a_stable_sync_id_and_edit_times() {
+        let d = db();
+        let key = d.create_local_playlist("Mine", 100).unwrap();
+        d.add_local_playlist_tracks(
+            key,
+            &[song_json("aaaaaaaaaaa"), song_json("bbbbbbbbbbb")],
+            100,
+        )
+        .unwrap();
+        let first = export_db(&d, 0, 200_000).playlists;
+        assert_eq!(first.len(), 1);
+        let p = &first[0];
+        assert!(p.id.starts_with("LPD") && p.id.len() == 25, "{}", p.id);
+        assert!(p.id[3..].bytes().all(|b| b.is_ascii_alphanumeric()));
+        assert_eq!(p.updated_at, 100_000);
+        let ids: Vec<_> = p.songs.iter().map(|s| s.id.as_str()).collect();
+        assert_eq!(ids, ["aaaaaaaaaaa", "bbbbbbbbbbb"]);
+        assert_eq!(export_db(&d, 0, 300_000).playlists, first, "unchanged: same id and time");
+
+        // Edited here (in the same second it was made, even): newer than before.
+        d.edit_local_playlist(key, Some("Renamed"), None, 100).unwrap();
+        let p = export_db(&d, 0, 400_000).playlists.remove(0);
+        assert_eq!(
+            (p.id.as_str(), p.name.as_str(), p.updated_at),
+            (first[0].id.as_str(), "Renamed", 100_001)
+        );
+        let rows: Vec<i64> = d.local_playlist_tracks(key).iter().map(|r| r.0).collect();
+        d.move_local_playlist_track(key, rows[1], Some(rows[0]), 150).unwrap();
+        let p = export_db(&d, 0, 500_000).playlists.remove(0);
+        assert_eq!(p.updated_at, 150_000);
+        assert_eq!(p.songs[0].id, "bbbbbbbbbbb");
+
+        // Deleted here: a tombstone at the deletion time.
+        d.delete_local_playlist(key).unwrap();
+        local_playlist_deleted(&d, key);
+        let out = export_db(&d, 0, i64::MAX).playlists;
+        assert_eq!(out.len(), 1);
+        assert!(out[0].deleted && out[0].id == p.id && out[0].updated_at > 500_000);
+    }
+
+    #[test]
+    fn phone_playlists_merge_and_apply_here() {
+        let d = db();
+        let kept = d.create_local_playlist("Kept", 100).unwrap();
+        let gone = d.create_local_playlist("Gone", 100).unwrap();
+        let newer = d.create_local_playlist("Old name", 100).unwrap();
+        d.add_local_playlist_tracks(
+            newer,
+            &[song_json("aaaaaaaaaaa"), song_json("bbbbbbbbbbb")],
+            90,
+        )
+        .unwrap();
+        let mine = export_db(&d, 0, 1_000).playlists;
+        let id = |name: &str| mine.iter().find(|p| p.name == name).unwrap().id.clone();
+        let phone = state(json!({"playlists": [
+            // A tie: this machine's copy stays.
+            {"id": id("Kept"), "name": "Phone's", "updatedAt": 100_000, "songs": []},
+            {"id": id("Gone"), "deleted": true, "updatedAt": 100_000},
+            {"id": id("Old name"), "name": "New name", "updatedAt": 200_000,
+             "thumbnailUrl": "https://cover", "songs": [
+                {"id": "ccccccccccc", "title": "New", "artists": [{"id": "UC1", "name": "Them"}],
+                 "album": {"id": "MPRE1", "title": "Al"}, "thumbnail": "https://t", "durationMs": 61_000},
+                {"id": "bbbbbbbbbbb", "title": "ignored, known here"},
+                {"id": "ccccccccccc", "title": "a repeat"},
+                {"id": "LA1", "title": "On the phone", "local": true, "thumbnail": "content://x"},
+                {"id": "LOCAL:/etc/passwd", "title": "not one of ours", "local": true},
+                {"id": "", "title": "no id"}
+             ]},
+            {"id": "LPphone1", "name": "From phone", "updatedAt": 50_000,
+             "songs": [{"id": "ddddddddddd", "title": "D"}]},
+            {"id": "LPdead", "deleted": true, "updatedAt": 40_000},
+            {"id": "", "name": "no id", "updatedAt": 1}
+        ]}));
+        assert!(import_playlists(&d, &phone.playlists, 2_000).unwrap());
+
+        assert_eq!(d.local_playlist(kept).unwrap().title, "Kept");
+        assert!(d.local_playlist(gone).is_none());
+        assert_eq!(d.local_playlist(newer).unwrap().title, "New name");
+        assert_eq!(
+            track_ids(&d, newer),
+            ["ccccccccccc", "bbbbbbbbbbb", "MQLOCAL:LA1", "MQLOCAL:LOCAL:/etc/passwd"]
+        );
+        // Rendered with no network: the phone's metadata, or what this machine already had.
+        let songs: Vec<SongItem> = d
+            .local_playlist_tracks(newer)
+            .iter()
+            .map(|(_, json, _)| serde_json::from_str(json).unwrap())
+            .collect();
+        assert_eq!(
+            (songs[0].title.as_str(), songs[0].artists.as_str(), songs[0].duration.as_deref()),
+            ("New", "Them", Some("1:01"))
+        );
+        assert_eq!(songs[0].album_id.as_deref(), Some("MPRE1"));
+        assert_eq!(songs[1].title, "Tbbbbbbbbbbb");
+        assert_eq!(songs[2].thumbnail, None);
+        let from_phone = d.local_playlists().into_iter().find(|p| p.title == "From phone").unwrap();
+        assert_eq!(track_ids(&d, from_phone.id), ["ddddddddddd"]);
+
+        // Sent back as received: ids, times, the phone's files and cover, the tombstones.
+        let out = export_db(&d, 0, 3_000).playlists;
+        let get = |id: &str| out.iter().find(|p| p.id == id).unwrap();
+        let p = get(&id("Old name"));
+        assert_eq!((p.updated_at, p.thumbnail_url.as_deref()), (200_000, Some("https://cover")));
+        let local: Vec<_> = p.songs.iter().map(|s| (s.id.as_str(), s.local)).collect();
+        assert_eq!(
+            local,
+            [
+                ("ccccccccccc", false),
+                ("bbbbbbbbbbb", false),
+                ("LA1", true),
+                ("LOCAL:/etc/passwd", true)
+            ]
+        );
+        assert_eq!(get("LPphone1").updated_at, 50_000);
+        assert!(get(&id("Gone")).deleted && get("LPdead").deleted);
+        assert_eq!(out.len(), 5);
+
+        // Nothing new: a second import changes nothing.
+        assert!(!import_playlists(&d, &phone.playlists, 4_000).unwrap());
+        assert_eq!(export_db(&d, 0, 5_000).playlists, out);
+
+        // A newer tombstone from the phone takes a playlist made there.
+        let phone =
+            state(json!({"playlists": [{"id": "LPphone1", "deleted": true, "updatedAt": 60_000}]}));
+        assert!(import_playlists(&d, &phone.playlists, 6_000).unwrap());
+        assert!(d.local_playlist(from_phone.id).is_none());
     }
 
     #[test]

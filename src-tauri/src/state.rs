@@ -1222,6 +1222,10 @@ impl AppState {
                 ResolveError::LocalMissing(path.to_owned())
             });
         }
+        // A file on the phone, in a playlist synced from it (mqsync.rs): nothing here plays it.
+        if video_id.starts_with(crate::mqsync::PHONE_SONG_PREFIX) {
+            return Err(ResolveError::AllClientsFailed(video_id.to_owned()));
+        }
         // Latency cache first (context/11) — honor expiry, never a source of truth.
         //
         // The URL has to outlive the *track*, not just the load. googlevideo keeps serving a

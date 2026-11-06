@@ -1347,6 +1347,6 @@ export const onLtState = (cb: (s: LtState) => void): Promise<UnlistenFn> =>
 export const onLtNotice = (cb: (msg: string) => void): Promise<UnlistenFn> =>
 	listen<string>('lt-notice', (e) => cb(e.payload));
 
-/** A sync with the phone changed shared settings (mqsync.rs): re-read the ones you show. */
+/** A sync with the phone changed shared settings or local playlists (mqsync.rs): re-read them. */
 export const onSharedSettingsChanged = (cb: () => void): Promise<UnlistenFn> =>
 	listen('shared-settings-changed', () => cb());

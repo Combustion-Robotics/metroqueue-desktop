@@ -1612,6 +1612,11 @@ export function initApp(mini = false): () => void {
 		api.onPlaybackNotice((msg) => toast(msg)), // auto-skipped an unplayable track
 		api.onCoverError((msg) => toast.error(msg)), // playlist artwork YouTube wouldn't take
 		api.onLocalChanged(forgetLocal), // a local file turned out to be gone — drop it everywhere
+		api.onSharedSettingsChanged(() => {
+			// A phone sync may have changed the playlists on this machine.
+			refreshLocalPlaylists();
+			api.playlistIndex().then((map) => (savedIn.map = map), () => {});
+		}),
 		api.onAuthChanged((a) => {
 			auth.account = a;
 			resetLibraryForAccount();

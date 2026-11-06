@@ -1983,15 +1983,22 @@ fn custom_cover(state: &Arc<AppState>, playlist_id: &str) -> Option<String> {
     std::path::Path::new(&path).is_file().then_some(path)
 }
 
+/// A deleted local playlist's artwork was a copy made for it, so it goes too.
+pub(crate) fn forget_local_cover(db: &crate::db::Db, key: i64) {
+    let cover = cover_key(&format!("{LOCAL_PLAYLIST_PREFIX}{key}"));
+    if let Some(path) = db.get_setting(&cover) {
+        let _ = std::fs::remove_file(path);
+        db.delete_setting(&cover);
+    }
+}
+
 #[tauri::command]
 pub async fn delete_playlist(state: St<'_>, playlist_id: String) -> Result<(), String> {
     if is_local_playlist(&playlist_id) {
-        state.db.delete_local_playlist(local_key(&playlist_id)?).map_err(db_err)?;
-        // Its artwork was a copy made for it, so it goes too.
-        if let Some(cover) = state.db.get_setting(&cover_key(&playlist_id)) {
-            let _ = std::fs::remove_file(cover);
-            state.db.delete_setting(&cover_key(&playlist_id));
-        }
+        let key = local_key(&playlist_id)?;
+        state.db.delete_local_playlist(key).map_err(db_err)?;
+        crate::mqsync::local_playlist_deleted(&state.db, key);
+        forget_local_cover(&state.db, key);
         return Ok(());
     }
     let client = editable_playlist(&state, &playlist_id)?;
