@@ -51,6 +51,7 @@ jobs:
           [ "$CARGO_VERSION" = "$VERSION" ] \
             || { echo "::error::Cargo.toml says $CARGO_VERSION but tauri.conf.json says $VERSION. Bump both"; exit 1; }
           NOTES="Built from ${GITHUB_SHA::7}: $(git log -1 --pretty=%s)"
+          [ -f "docs/metroqueue/release-notes/$VERSION.md" ] && NOTES="$(cat "docs/metroqueue/release-notes/$VERSION.md")"$'\n\n'"$NOTES"
 
           if [ "$GITHUB_REF_NAME" = main ]; then
             TAG="v$VERSION"
