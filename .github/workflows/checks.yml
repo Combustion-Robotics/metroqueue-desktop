@@ -126,8 +126,12 @@ jobs:
       # needed to compile and run the tests.
       - name: Build deps
         run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
+          # GitHub's Azure mirror is sometimes throttled to a crawl; use the main archive first, Azure and kernel.org as fallbacks.
+          printf "%s\n" http://archive.ubuntu.com/ubuntu/ http://azure.archive.ubuntu.com/ubuntu/ http://mirrors.edge.kernel.org/ubuntu/ \
+            | sudo tee /etc/apt/apt-mirrors.txt >/dev/null
+          APT="sudo -E apt-get -o Acquire::Retries=3 -o Acquire::http::Timeout=30"
+          $APT update
+          $APT install -y --no-install-recommends \
             libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev \
             libssl-dev libdbus-1-dev libmpv-dev
 
