@@ -209,7 +209,11 @@ async fn serve(
         (Method::GET, "/api/queue") => json(&control::queue(&st).await),
         (Method::GET, "/api/snapshot") => json(&control::snapshot(&st).await),
         (Method::POST, "/api/load") => match body_json::<QueueSnapshot>(req).await {
-            Some(snap) => refused(detached(async move { control::load(&st, snap).await }).await),
+            Some(snap) => {
+                // Hand-off: whatever this app was remote-controlling, it plays here now.
+                rx.app.state::<Arc<super::remote::Controller>>().close();
+                refused(detached(async move { control::load(&st, snap).await }).await)
+            }
             None => status(StatusCode::BAD_REQUEST),
         },
         (Method::POST, "/api/items") => match body_json::<ItemsRequest>(req).await {

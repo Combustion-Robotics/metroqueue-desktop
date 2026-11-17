@@ -55,7 +55,8 @@
 	import CommandPalette from '$lib/components/CommandPalette.svelte';
 	import KeyboardShortcuts from '$lib/components/KeyboardShortcuts.svelte';
 	import { Button } from '$lib/components/ui/button';
-	import { auth, initApp, np, playback, prefs, ui } from '$lib/player.svelte';
+	import { auth, initApp, np, playback, prefs, toast, ui } from '$lib/player.svelte';
+	import { initRemote, remoteError } from '$lib/remote.svelte';
 	import { isLocalId } from '$lib/api';
 	import { video } from '$lib/video.svelte';
 	import { initWin, windowCorners } from '$lib/win.svelte';
@@ -177,9 +178,11 @@
 		const teardownApp = initApp();
 		const teardownZoom = initZoom();
 		const teardownShortcuts = initShortcuts();
+		const teardownRemote = initRemote((reason) => toast.error(remoteError(reason)));
 		initImport();
 		return () => {
 			clearInterval(updateTimer);
+			teardownRemote();
 			teardownApp();
 			teardownWin();
 			teardownZoom();

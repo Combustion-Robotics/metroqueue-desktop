@@ -1475,5 +1475,35 @@
 			"not_found": "Couldn’t find that on YouTube Music.",
 			"cooldown": "YouTube Music asked Limusic to slow down, so imports are paused until {time}. Everything found so far is saved."
 		}
+	},
+	"devices": {
+		"title": "Play on a device",
+		"playing_on": "Playing on {name}",
+		"reconnecting": "Reconnecting to {name}…",
+		"searching": "Looking for MetroQueue phones, TVs and computers on your network…",
+		"connected": "Connected",
+		"ready": "Paired",
+		"not_paired": "Not paired",
+		"offline": "Not found on the network",
+		"pair": "Pair",
+		"pair_hint": "Enter the code shown on {name}.",
+		"code": "Pairing code",
+		"paired": "Paired with {name}",
+		"play_there": "Play on {name}",
+		"control": "Control",
+		"continue_here": "Continue here",
+		"disconnect": "Disconnect",
+		"forget": "Forget {name}",
+		"errors": {
+			"unreachable": "Couldn't reach that device. Is it on the same network?",
+			"not_receiver": "That device isn't accepting connections.",
+			"wrong_code": "That code isn't right",
+			"expired": "The code expired",
+			"locked": "Too many tries. Wait a few minutes and try again.",
+			"not_paired": "That device forgot this computer. Pair it again.",
+			"busy": "That device can't be controlled right now.",
+			"lost": "Lost the connection to the device.",
+			"failed": "Something went wrong talking to the device."
+		}
 	}
 }

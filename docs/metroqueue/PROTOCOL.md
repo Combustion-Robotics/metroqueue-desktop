@@ -1,7 +1,8 @@
 # MetroQueue receiver protocol (v1)
 
-How a MetroQueue phone discovers, pairs with and controls a **receiver** (MetroQueue on Android TV
-today, MetroQueue Desktop next). Derived from the MetroQueue code on `dev`:
+How a MetroQueue phone discovers, pairs with and controls a **receiver** (MetroQueue on Android TV,
+MetroQueue Desktop, and MetroQueue phones themselves). The desktop is a controller too: it drives
+phones and other receivers the same way (section 9). Derived from the MetroQueue code on `dev`:
 
 | Piece | File (app/src/main/kotlin/com/metrolist/music/…) |
 |---|---|
@@ -45,7 +46,7 @@ A receiver is "compatible" when it implements everything marked **required** bel
 | Port | `8642` |
 | TXT `id` | the receiver's stable id (TV: a random UUID generated once, persisted). **Required.** The phone matches discovered receivers to paired ones by this id. |
 | TXT `v` | protocol version, `"1"` |
-| TXT `kind` | `"tv"` or `"desktop"`. Absent = `"tv"` (older TVs). A desktop receiver **must** send `kind=desktop`. |
+| TXT `kind` | `"tv"`, `"desktop"` or `"phone"`. Absent = `"tv"` (older TVs). A desktop receiver **must** send `kind=desktop`, a phone `kind=phone`. |
 
 Phone behaviour: discovery runs only while the device picker is open or while reconnecting. It
 resolves each service, prefers an IPv4 address, de-duplicates by instance name or `id`, and drops
@@ -139,7 +140,7 @@ The "hello". Sending the bearer token makes `paired` meaningful.
 | `name` | string | — | display name |
 | `version` | int | `1` | protocol version |
 | `paired` | bool | `false` | `true` iff the request carried a valid paired token |
-| `kind` | string | `"tv"` | `"tv"` / `"desktop"` |
+| `kind` | string | `"tv"` | `"tv"` / `"desktop"` / `"phone"` |
 | `sync` | int | `0` | data-sync version the receiver serves at `/api/sync` (see SYNC.md); `0` = none |
 
 `404` when the server isn't a receiver (a phone's browser-remote server) or the caller isn't on
@@ -415,3 +416,24 @@ locally, paused.
 
 Timeouts on the phone: connect 4 s, read/write 15 s (60 s for `/api/profile` and `/api/sync`
 uploads). A receiver should answer quickly; a slow `/api/info` makes the phone think it is offline.
+
+## 9. Other controllers, hand-off
+
+Any receiver may also be a controller. MetroQueue Desktop controls phones (`kind=phone`), TVs and
+other desktops with exactly the client side above (`src-tauri/src/metroqueue/remote.rs`): it browses
+`_metroqueue._tcp` (skipping its own `id`), pairs with `pair/start` `{name: <computer name>}` and
+`pair/finish`, keeps the token per receiver `id` (in `metroqueue-remotes.json`, apart from the
+hashes of the phones paired *to* it), connects as in section 7 (steps 1-4), keeps the WebSocket
+with the same 20 s pings and 1, 2, 3, 5, 8, 10 s reconnects, and sends `/api/cmd` from its player
+bar. Its own player is paused while it controls another device. It does no `/api/profile` or
+`/api/sync` in that direction (phones already sync with the desktop's `/api/sync`).
+
+Hand-off, both ways:
+
+- **Play on <device>**: `POST /api/load` with the controller's queue snapshot (`playing: true`),
+  then the controller pauses locally and shows the receiver's player.
+- **Continue here**: `GET /api/snapshot`, `cmd pause`, close, then play the snapshot locally.
+- **A receiver that gets `/api/load` while it is itself controlling another device leaves its
+  remote mode** (closes that connection, leaving the other device as it is) and plays the loaded
+  queue locally. This is what makes a phone controlling the desktop and the desktop controlling
+  that phone hand playback back and forth without either ending up remoting a paused player.

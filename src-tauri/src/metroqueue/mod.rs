@@ -4,11 +4,14 @@
 //!
 //! Paired phones (token hashes only) and this receiver's stable id live in `metroqueue.json` in
 //! the app data dir. On by default; the `metroqueue_receiver` setting (`"false"`) turns it off.
+//!
+//! The other direction, this app controlling phones and other receivers, is [`remote`].
 
 mod control;
 mod mdns;
 mod pairing;
 mod protocol;
+pub mod remote;
 mod server;
 
 use std::path::{Path, PathBuf};
@@ -97,6 +100,7 @@ pub fn init(app: &AppHandle) {
             tracing::warn!(error = %e, "metroqueue: could not save the receiver id");
         }
     }
+    remote::init(app, dir, store.device_id.clone());
     let rx = Arc::new(Receiver {
         app: app.clone(),
         id: store.device_id,
@@ -138,7 +142,7 @@ fn now_ms() -> i64 {
 }
 
 /// Written whole to a temporary file and renamed over, so a crash can't leave half a store.
-fn save(path: &Path, store: &Store) -> std::io::Result<()> {
+fn save(path: &Path, store: &impl Serialize) -> std::io::Result<()> {
     if let Some(dir) = path.parent() {
         std::fs::create_dir_all(dir)?;
     }

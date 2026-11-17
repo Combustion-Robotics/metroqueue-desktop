@@ -52,8 +52,8 @@ pub struct RemoteTrack {
     pub episode: bool,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize)]
-#[serde(rename_all = "camelCase")]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
 pub struct RemoteState {
     pub track: Option<RemoteTrack>,
     pub playing: bool,
@@ -69,6 +69,25 @@ pub struct RemoteState {
     pub speed: f32,
 }
 
+impl Default for RemoteState {
+    fn default() -> Self {
+        Self {
+            track: None,
+            playing: false,
+            position: 0,
+            duration: 0,
+            shuffle: false,
+            repeat: 0,
+            volume: 1.0,
+            queue_title: None,
+            index: -1,
+            queue_hash: 0,
+            playback_state: 1,
+            speed: 1.0,
+        }
+    }
+}
+
 #[derive(Debug, Serialize)]
 pub struct Info<'a> {
     pub id: &'a str,
@@ -77,6 +96,22 @@ pub struct Info<'a> {
     pub paired: bool,
     pub kind: &'a str,
     pub sync: i32,
+}
+
+/// `GET /api/info` as another receiver answers it (the controller side).
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[serde(default)]
+pub struct InfoReply {
+    pub id: String,
+    pub name: String,
+    pub paired: bool,
+    pub kind: String,
+}
+
+impl Default for InfoReply {
+    fn default() -> Self {
+        Self { id: String::new(), name: String::new(), paired: false, kind: "tv".into() }
+    }
 }
 
 #[derive(Debug, Default, Deserialize)]
@@ -98,6 +133,15 @@ pub struct PairFinishResponse<'a> {
     pub token: &'a str,
     pub tv_id: &'a str,
     pub tv_name: &'a str,
+}
+
+/// [`PairFinishResponse`] as the controller reads it.
+#[derive(Debug, Default, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct PairReply {
+    pub token: String,
+    pub tv_id: String,
+    pub tv_name: String,
 }
 
 /// YouTube Music's `watchEndpoint`, as the phone sends it. Only `videoId`, `playlistId` and
