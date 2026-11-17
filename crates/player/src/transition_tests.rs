@@ -482,7 +482,8 @@ fn planned_transition_starts_at_its_point_and_enters_the_next_track_where_asked(
     });
     assert!(out.get_property::<String>("af").unwrap().contains("highpass"));
     let entered = incoming.get_property::<f64>("time-pos").unwrap();
-    assert!((1.5..2.0).contains(&entered), "incoming at {entered}");
+    // mpv lands a seek on the frame just before the target, e.g. 1.499985.
+    assert!((1.49..2.0).contains(&entered), "incoming at {entered}");
     assert_eq!(incoming.get_property::<f64>("speed").unwrap(), 1.03);
     wait_for("fade end", 3.0, || !p.decks.fading.load(Ordering::Acquire));
     assert!(!incoming.get_property::<String>("af").unwrap().contains("mixfx"));
