@@ -1138,6 +1138,25 @@ export const onLoginError = (cb: (msg: string) => void): Promise<UnlistenFn> =>
 export const onLoginDone = (cb: () => void): Promise<UnlistenFn> =>
 	listen('login-done', () => cb());
 
+// --- Discord bot (mirrors playback into Discord voice channels) ---------------------------------
+export interface DiscordBotStatus {
+	enabled: boolean;
+	hasToken: boolean;
+	state: 'off' | 'connecting' | 'online' | 'error';
+	error: string | null;
+	botName: string | null;
+	inviteUrl: string | null;
+	voice: { guild: string; channel: string }[];
+}
+export const discordBotStatus = () => invoke<DiscordBotStatus>('discord_bot_status');
+/** Rejects with a readable error for a token Discord refuses. An empty string clears it. */
+export const discordBotSetToken = (token: string) =>
+	invoke<void>('discord_bot_set_token', { token });
+export const discordBotSetEnabled = (enabled: boolean) =>
+	invoke<void>('discord_bot_set_enabled', { enabled });
+export const onDiscordBotStatus = (cb: (s: DiscordBotStatus) => void): Promise<UnlistenFn> =>
+	listen<DiscordBotStatus>('discord-bot://status', (e) => cb(e.payload));
+
 // --- lyrics ---------------------------------------------------------------------------------
 export interface LyricWord {
 	text: string;

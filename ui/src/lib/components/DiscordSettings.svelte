@@ -24,6 +24,7 @@
 		type PreviewTrack
 	} from '$lib/discord';
 	import DiscordCard from '$lib/components/DiscordCard.svelte';
+	import DiscordBotSettings from '$lib/components/DiscordBotSettings.svelte';
 
 	let { settings }: { settings: Record<string, string> } = $props();
 
@@ -281,6 +282,8 @@
 			</section>
 		</div>
 		{/if}
+
+		<DiscordBotSettings />
 	</div>
 
 	<aside
