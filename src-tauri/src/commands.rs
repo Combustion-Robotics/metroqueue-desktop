@@ -2703,6 +2703,27 @@ pub async fn listenbrainz_disconnect(state: St<'_>) -> Result<(), String> {
     Ok(())
 }
 
+/// The Discord voice bot's state for its settings tab. Never carries the token.
+#[tauri::command]
+pub async fn discord_bot_status(
+    state: St<'_>,
+) -> Result<crate::discordbot::DiscordBotStatus, String> {
+    Ok(state.discord_bot.status())
+}
+
+/// Store the bot token (an empty one clears it and stops the bot), then (re)start the bot if it
+/// is enabled.
+#[tauri::command]
+pub async fn discord_bot_set_token(state: St<'_>, token: String) -> Result<(), String> {
+    state.discord_bot.set_token(&state.db, &token)
+}
+
+#[tauri::command]
+pub async fn discord_bot_set_enabled(state: St<'_>, enabled: bool) -> Result<(), String> {
+    state.discord_bot.set_enabled(&state.db, enabled);
+    Ok(())
+}
+
 /// `{ connected, username }` from the persisted token — seeds the Scrobbling tab on mount.
 #[tauri::command]
 pub async fn listenbrainz_status(state: St<'_>) -> Result<serde_json::Value, String> {

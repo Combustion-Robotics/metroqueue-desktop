@@ -23,6 +23,7 @@
             librsvg
             openssl
             pkg-config
+            cmake
             glib-networking
             webkitgtk_4_1
           ];

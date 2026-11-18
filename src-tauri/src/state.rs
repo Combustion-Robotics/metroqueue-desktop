@@ -73,6 +73,9 @@ pub struct AppState {
     /// Last.fm + ListenBrainz scrobbler. Same feed again; each half parks until its own
     /// credential is set (session key via the titlebar button, user token via Scrobbling settings).
     pub lastfm: crate::lastfm::LastfmHandle,
+    /// The Discord voice bot (`discord_bot_enabled`). Same feed again; its task runs only while it
+    /// is enabled and has a token.
+    pub discord_bot: crate::discordbot::DiscordBot,
     queue: Mutex<QueueState>,
     /// Bumped on every explicit `play`/jump so superseded async resolves discard their result
     /// (cancellation without JoinHandle bookkeeping). context/06 §6.
@@ -495,6 +498,7 @@ impl AppState {
         discord: Option<DiscordHandle>,
         lastfm: crate::lastfm::LastfmHandle,
     ) -> Self {
+        let discord_bot = crate::discordbot::DiscordBot::new(app.clone());
         AppState {
             it,
             clients,
@@ -507,6 +511,7 @@ impl AppState {
             media,
             discord,
             lastfm,
+            discord_bot,
             queue: Mutex::new(QueueState::default()),
             playback_effects: Mutex::new(()),
             auth: tokio::sync::Mutex::default(),
@@ -2638,6 +2643,7 @@ impl AppState {
         if let Some(d) = &self.discord {
             d.set_track(item);
         }
+        self.discord_bot.set_track(item);
         // A restored queue is paused at launch: nothing started, so nothing to announce.
         if stream_client != "restored"
             && self.db.get_setting("track_notifications").as_deref() == Some("true")
@@ -2740,6 +2746,7 @@ impl AppState {
         if let Some(d) = &self.discord {
             d.set_playing(playing);
         }
+        self.discord_bot.set_playing(playing);
     }
 
     /// Toggle Discord presence at runtime (the `discord_rpc` setting). Turning it off clears the
@@ -3433,6 +3440,7 @@ impl AppState {
             if let Some(d) = &self.discord {
                 d.set_position(pos, speed);
             }
+            self.discord_bot.set_position(pos);
             self.lastfm.set_position(pos);
         }
     }
@@ -3452,6 +3460,8 @@ impl AppState {
         if let Some(item) = self.current_item().await {
             self.lastfm.set_track(&item);
             self.lastfm.set_duration(duration);
+            // The bot's copy reached its end on its own, so it starts over too.
+            self.discord_bot.set_track(&item);
         }
     }
 
@@ -4954,6 +4964,13 @@ pub fn native_video() -> bool {
 /// realtime; the proxy re-issues it as bounded ranges, which are served at full speed, so both the
 /// first play and every seek start sooner. audioproxy.rs has the numbers and the kill-switch.
 fn mpv_stream_url(data: &PlaybackData) -> String {
+    let url = mpv_url(data);
+    // The Discord bot streams the same thing once this track starts.
+    crate::discordbot::remember_source(&data.video_id, &url, &data.headers);
+    url
+}
+
+fn mpv_url(data: &PlaybackData) -> String {
     // A user proxy reaches mpv as `http-proxy` (#241), and ffmpeg would send the loopback request
     // through it, and it cannot reach our 127.0.0.1, so audio would go silent. Hand mpv the
     // googlevideo URL instead and let the user's proxy carry it: no chunked proxy, but working

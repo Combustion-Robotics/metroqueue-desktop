@@ -8,6 +8,7 @@ mod commands;
 mod db;
 mod diagnostics;
 mod discord;
+mod discordbot;
 mod hotkeys;
 mod http;
 mod import;
@@ -917,6 +918,8 @@ pub fn run() {
                 lastfm,
             ));
             app.manage(app_state.clone());
+            // The Discord voice bot, if the user turned it on and gave it a token.
+            app_state.discord_bot.apply(&app_state.db);
 
             // The player view's <video> pulls its bytes from Rust over loopback, so the webview
             // never sees a googlevideo URL (context/11). videoproxy.rs explains why a socket and
@@ -1321,6 +1324,9 @@ pub fn run() {
             commands::listenbrainz_disconnect,
             commands::listenbrainz_status,
             commands::listenbrainz_profile,
+            commands::discord_bot_status,
+            commands::discord_bot_set_token,
+            commands::discord_bot_set_enabled,
             commands::theater_fullscreen,
             commands::release_notes,
             commands::can_self_update,

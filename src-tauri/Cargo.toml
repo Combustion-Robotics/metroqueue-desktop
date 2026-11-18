@@ -83,6 +83,16 @@ mdns-sd = { version = "0.21", default-features = false }
 sha2 = "0.10"
 flate2 = "1"
 gethostname = "1"
+# Discord voice bot (discordbot.rs). songbird 0.6 is the first release that speaks DAVE (Discord's
+# end-to-end-encrypted voice, mandatory since 2026; see its `davey` dependency), and voice
+# connections without it are refused. libopus is built from source by `libopus_sys` (cmake).
+serenity = { version = "0.12.5", default-features = false, features = ["client", "gateway", "model", "cache", "rustls_backend"] }
+songbird = { version = "0.6.1", default-features = false, features = ["driver", "gateway", "serenity", "rustls", "tungstenite"] }
+# Demuxers/codecs songbird hands what YouTube serves (WebM/Opus, MP4/AAC) and what local files are.
+symphonia = { version = "0.5", default-features = false, features = ["mkv", "isomp4", "aac", "mp3", "flac", "ogg", "vorbis", "wav", "pcm"] }
+# Builds the vendored libopus rather than linking whatever pkg-config finds: a Homebrew or distro
+# libopus would be a runtime dependency the bundles do not ship.
+opus2 = { version = "0.4", features = ["bundled"] }
 
 [dev-dependencies]
 # Mock runtime for the IPC guard test (lib.rs `only_ui`).
