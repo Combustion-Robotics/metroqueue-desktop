@@ -38,7 +38,7 @@ name: Linux release binaries
 # the checkout below still pins the build to the tag. scripts/release.sh dispatches both workflows.
 # Consequence: publishing a release from the GitHub UI builds nothing. Use the script.
 on:
-  # Called by fork-builds.yml on every push to main/dev, with the release it just created.
+  # Called by fork-builds.yml (run by hand on main/dev), with the release it just created.
   workflow_call:
     inputs:
       tag:

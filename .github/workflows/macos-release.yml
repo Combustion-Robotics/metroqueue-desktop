@@ -37,7 +37,7 @@ name: macOS release binaries
 # never read the cache the previous release wrote. Dispatching from master shares one cache across
 # releases while the checkout below still pins the build to the tag.
 on:
-  # Called by fork-builds.yml on every push to main/dev, with the release it just created.
+  # Called by fork-builds.yml (run by hand on main/dev), with the release it just created.
   workflow_call:
     inputs:
       tag:
